@@ -2,7 +2,7 @@
 // const { getISOTimestamp } = require('../lib/utils/dates')
 const { execSync } = require('child_process')
 const fs = require('fs')
-const { EDDATA_DATABASE_STATS } = require('../lib/consts')
+const { EDDATA_DATABASE_STATS, EDDATA_STATIONS_DB, EDDATA_SYSTEMS_DB, EDDATA_TRADE_DB } = require('../lib/consts')
 
 // The purpose of this is to be a place for any logic that needs to run at
 // startup, before the service goes back online. It is not a script in the
@@ -21,8 +21,12 @@ module.exports = async () => {
 
   console.log('Performing maintenance tasks...')
 
-  // Generate database statistics on startup if they don't exist
-  if (!fs.existsSync(EDDATA_DATABASE_STATS)) {
+  // Generate database statistics on startup if databases exist and stats don't
+  const hasDatabases = fs.existsSync(EDDATA_STATIONS_DB) ||
+                       fs.existsSync(EDDATA_SYSTEMS_DB) ||
+                       fs.existsSync(EDDATA_TRADE_DB)
+
+  if (hasDatabases && !fs.existsSync(EDDATA_DATABASE_STATS)) {
     console.log('Generating database statistics...')
     try {
       execSync('npm run stats', { stdio: 'inherit' })
