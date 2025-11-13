@@ -236,7 +236,7 @@ if (SAVE_PAYLOAD_EXAMPLES === true &&
   // During the maintenance window the API and website continue running and
   // performance of them should not be impacted.
   //
-  // Ardent maintenance tasks - like optimising the databases and creating
+  // EDData maintenance tasks - like optimising the databases and creating
   // backups - takes around 15-30 minutes. The actual game maintenance window
   // usually is from 7AM to 9AM UTC and commonly takes 2-3 hours, so we these
   // tasks should all be finished long before the game comes back online.
@@ -324,7 +324,7 @@ if (SAVE_PAYLOAD_EXAMPLES === true &&
   enableDatabaseCacheTrigger() // Enable cache trigger
 
   console.log(printStats())
-  console.log('Ardent Collector ready!')
+  console.log('EDData Collector ready!')
 
   // Enhanced message processing with Node.js 24 optimizations
   performanceMark('message-processing-start')
@@ -413,7 +413,7 @@ if (SAVE_PAYLOAD_EXAMPLES === true &&
 })() // Close the main IIFE
 
 process.on('SIGTERM', () => {
-  console.log('Ardent Collector received SIGTERM signal')
+  console.log('EDData Collector received SIGTERM signal')
   closeAllDatabaseConnections()
   process.exit(0)
 })

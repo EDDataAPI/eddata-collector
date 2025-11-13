@@ -11,9 +11,9 @@ const path = require('path')
 const byteSize = require('byte-size')
 const getFileHash = require('../lib/utils/get-file-hash')
 
-const { ARDENT_DATA_DIR } = require('../lib/consts')
-const TMP_DOWNLOAD_DIR = path.join(ARDENT_DATA_DIR, 'tmp')
-const BACKUP_DOWNLOAD_MANIFEST = 'https://downloads.ardent-insight.com/downloads.json'
+const { EDDATA_DATA_DIR } = require('../lib/consts')
+const TMP_DOWNLOAD_DIR = path.join(EDDATA_DATA_DIR, 'tmp')
+const BACKUP_DOWNLOAD_MANIFEST = 'https://downloads.eddata.api.com/downloads.json'
 
 async function download (url, pathToDestination) {
   if (fs.existsSync(pathToDestination)) await rm(pathToDestination)
@@ -31,7 +31,7 @@ function syncToDataDir (copyFrom, copyTo) {
 }
 
 (async () => {
-  if (!fs.existsSync(ARDENT_DATA_DIR)) await mkdir(ARDENT_DATA_DIR)
+  if (!fs.existsSync(EDDATA_DATA_DIR)) await mkdir(EDDATA_DATA_DIR)
   if (!fs.existsSync(TMP_DOWNLOAD_DIR)) await mkdir(TMP_DOWNLOAD_DIR)
   const res = await fetch(BACKUP_DOWNLOAD_MANIFEST)
   const files = await res.json()
@@ -66,8 +66,8 @@ function syncToDataDir (copyFrom, copyTo) {
     console.log(`Uncompressed file size is ${(byteSize(Number(stats.size)))}`)
     console.timeEnd(`Uncompressed ${path.basename(file.url)}`)
 
-    console.time(`Saved ${file.name} to ${ARDENT_DATA_DIR}`)
-    syncToDataDir(pathToUncompressedFile, path.resolve(ARDENT_DATA_DIR, file.name))
-    console.timeEnd(`Saved ${file.name} to ${ARDENT_DATA_DIR}`)
+    console.time(`Saved ${file.name} to ${EDDATA_DATA_DIR}`)
+    syncToDataDir(pathToUncompressedFile, path.resolve(EDDATA_DATA_DIR, file.name))
+    console.timeEnd(`Saved ${file.name} to ${EDDATA_DATA_DIR}`)
   }
 })()

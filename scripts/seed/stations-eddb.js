@@ -6,10 +6,10 @@ const readline = require('readline')
 const StationsDatabase = require('../../lib/db/stations-db')
 
 // Station data seeded from EDDB (before it shut down)
-const SYSTEMS_JSON = '../ardent-seed-data/eddb/stations.jsonl'
+const SYSTEMS_JSON = '../eddata-seed-data/eddb/stations.jsonl'
 
 // Setting this to true is very fast (100,000 inserts a second) but ONLY safe
-// to do a *new, empty datababase* with nothing else accessing it. If you stop
+// to do a *new, empty database* with nothing else accessing it. If you stop
 // the process you will need to delete the database and start again and let
 // the import complete. It will corrupt any existing database.
 const UNSAFE_FAST_IMPORT = true
@@ -20,13 +20,16 @@ const USE_TRANSACTIONS = true
 // Import will grind to a halt if this is run without lots of extra ram
 const USE_ADDITIONAL_RAM = true
 
+// Landing pad size mapping
+const PAD_SIZE_MAP = { S: 1, M: 2, L: 3 }
+
 ;(async () => {
   let counter = 0
 
   const stationsDb = StationsDatabase.getDatabase()
   StationsDatabase.ensureTables()
 
-  if (UNSAFE_FAST_IMPORT === true) {
+  if (UNSAFE_FAST_IMPORT) {
     // Using 'synchronous = OFF' is much faster, but the database may end up
     // corrupted if the program crashes or the computer loses power (etc)
     stationsDb.pragma('synchronous = OFF')
@@ -38,7 +41,7 @@ const USE_ADDITIONAL_RAM = true
     // Only use locking_mode EXCLUSIVE if no other processes need to access the DB
     stationsDb.pragma('locking_mode = EXCLUSIVE')
 
-    if (USE_ADDITIONAL_RAM === true) {
+    if (USE_ADDITIONAL_RAM) {
       stationsDb.pragma('cache_size = 1000000')
       stationsDb.pragma('temp_store = MEMORY')
     }
@@ -62,7 +65,7 @@ const USE_ADDITIONAL_RAM = true
   // Using BEGIN/COMMIT is faster but can use a very large amount of disk space
   // If you end up with a huge -wal file, you can use 'journal_mode = DELETE'
   // to reset it and get the diskspace back (do not just delete the -wal file!)
-  if (UNSAFE_FAST_IMPORT === true && USE_TRANSACTIONS === true) stationsDb.prepare('BEGIN').run()
+  if (UNSAFE_FAST_IMPORT && USE_TRANSACTIONS) stationsDb.prepare('BEGIN').run()
   for await (const line of rl) {
     if (line === '[' || line === ']') continue
 
@@ -70,24 +73,18 @@ const USE_ADDITIONAL_RAM = true
 
     // Every 10000 operations, fully pause for a second to manage load
     // (can remove this for extra speed). Disabled if using UNSAFE_FAST_IMPORT
-    if (UNSAFE_FAST_IMPORT !== true) { if (counter % 10000 === 0) await sleep(1000) }
+    if (!UNSAFE_FAST_IMPORT && counter % 10000 === 0) await sleep(1000)
 
     try {
       const station = JSON.parse(line.replace(/,$/, '').trim())
 
-      let maxLandingPadSize
-      if (station.max_landing_pad_size === 'S') maxLandingPadSize = 1
-      if (station.max_landing_pad_size === 'M') maxLandingPadSize = 2
-      if (station.max_landing_pad_size === 'L') maxLandingPadSize = 3
+      const maxLandingPadSize = PAD_SIZE_MAP[station.max_landing_pad_size]
 
-      const newStationData = {
-        stationName: station.name,
-        marketId: station.ed_market_id,
-        maxLandingPadSize
-      }
-
-      if (station.ed_market_id) {
-        updateStationDataByMarketId.run(newStationData)
+      if (station.ed_market_id && maxLandingPadSize) {
+        updateStationDataByMarketId.run({
+          marketId: station.ed_market_id,
+          maxLandingPadSize
+        })
       }
 
       // Allow other process to run
@@ -98,7 +95,7 @@ const USE_ADDITIONAL_RAM = true
     }
   }
 
-  if (UNSAFE_FAST_IMPORT === true && USE_TRANSACTIONS === true) stationsDb.prepare('COMMIT').run()
+  if (UNSAFE_FAST_IMPORT && USE_TRANSACTIONS) stationsDb.prepare('COMMIT').run()
 
   console.timeEnd('Importing stations')
 

@@ -1,5 +1,5 @@
 const fs = require('fs')
-const { ARDENT_CACHE_DIR, ARDENT_DATABASE_STATS } = require('../../lib/consts')
+const { EDDATA_CACHE_DIR, EDDATA_DATABASE_STATS } = require('../../lib/consts')
 const { getISOTimestamp } = require('../../lib/utils/dates')
 const { systemsDb, locationsDb, stationsDb, tradeDb } = require('../../lib/db')
 
@@ -44,8 +44,8 @@ const { systemsDb, locationsDb, stationsDb, tradeDb } = require('../../lib/db')
     updatedInLast24Hours: commodityStats?.updatedInLast24Hours ?? 0 + stationStats?.updatedInLast24Hours ?? 0,
     timestamp: new Date().toISOString()
   }
-  if (!fs.existsSync(ARDENT_CACHE_DIR)) { fs.mkdirSync(ARDENT_CACHE_DIR, { recursive: true }) }
-  fs.writeFileSync(ARDENT_DATABASE_STATS, JSON.stringify(stats, null, 2))
+  if (!fs.existsSync(EDDATA_CACHE_DIR)) { fs.mkdirSync(EDDATA_CACHE_DIR, { recursive: true }) }
+  fs.writeFileSync(EDDATA_DATABASE_STATS, JSON.stringify(stats, null, 2))
   console.timeEnd('Update database stats')
   process.exit()
 })()

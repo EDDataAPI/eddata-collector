@@ -8,18 +8,18 @@ const { promisify } = require('util')
 const pipeline = promisify(stream.pipeline)
 
 const {
-  ARDENT_DOWNLOADS_BASE_URL,
-  ARDENT_BACKUP_DIR,
-  ARDENT_DOWNLOADS_DIR
+  EDDATA_DOWNLOADS_BASE_URL,
+  EDDATA_BACKUP_DIR,
+  EDDATA_DOWNLOADS_DIR
 } = require('../lib/consts')
 
-const pathToBackupDownloadManifest = path.join(ARDENT_DOWNLOADS_DIR, 'downloads.json')
+const pathToBackupDownloadManifest = path.join(EDDATA_DOWNLOADS_DIR, 'downloads.json')
 
 const databasesToBackup = [
-  path.join(ARDENT_BACKUP_DIR, '/locations.db'),
-  path.join(ARDENT_BACKUP_DIR, '/trade.db'),
-  path.join(ARDENT_BACKUP_DIR, '/stations.db'),
-  path.join(ARDENT_BACKUP_DIR, '/systems.db')
+  path.join(EDDATA_BACKUP_DIR, '/locations.db'),
+  path.join(EDDATA_BACKUP_DIR, '/trade.db'),
+  path.join(EDDATA_BACKUP_DIR, '/stations.db'),
+  path.join(EDDATA_BACKUP_DIR, '/systems.db')
 ]
 
 ;(async () => {
@@ -33,8 +33,8 @@ const databasesToBackup = [
 
     // Note: Does not overwrite existing compressed version until the new
     // version has been created so that the switch over is atomic
-    const pathToOutput = `${ARDENT_DOWNLOADS_DIR}/${path.basename(pathToDatabase)}.gz`
-    const pathToTmpOutput = `${ARDENT_DOWNLOADS_DIR}/${path.basename(pathToDatabase)}.tmp.gz`
+    const pathToOutput = `${EDDATA_DOWNLOADS_DIR}/${path.basename(pathToDatabase)}.gz`
+    const pathToTmpOutput = `${EDDATA_DOWNLOADS_DIR}/${path.basename(pathToDatabase)}.tmp.gz`
     await pipeline(
       fs.createReadStream(pathToDatabase),
       zlib.createGzip({ level: 1 }), // Favour faster compression over smaller files, latter takes way too long for large files
@@ -52,7 +52,7 @@ const databasesToBackup = [
     try {
       backupDownloadManifest[path.basename(pathToDatabase)] = {
         name: path.basename(pathToDatabase),
-        url: `${ARDENT_DOWNLOADS_BASE_URL}/${path.basename(pathToOutput)}`,
+        url: `${EDDATA_DOWNLOADS_BASE_URL}/${path.basename(pathToOutput)}`,
         size: newSize,
         created,
         sha256: await getFileHash(pathToOutput)

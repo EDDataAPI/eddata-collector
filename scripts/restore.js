@@ -2,30 +2,30 @@ const path = require('path')
 const fs = require('fs')
 
 const {
-  ARDENT_DATA_DIR,
-  ARDENT_BACKUP_DIR
+  EDDATA_DATA_DIR,
+  EDDATA_BACKUP_DIR
 } = require('../lib/consts')
 
 ;(async () => {
-  console.log(`Backup location: ${ARDENT_BACKUP_DIR}`)
-  console.log(`Target location: ${ARDENT_DATA_DIR}`)
+  console.log(`Backup location: ${EDDATA_BACKUP_DIR}`)
+  console.log(`Target location: ${EDDATA_DATA_DIR}`)
   console.log('Restoring from backup …')
 
   console.time('Backups restored')
 
-  const pathToLocationsDbBackup = path.join(ARDENT_BACKUP_DIR, '/locations.db')
-  const pathToLocationsDbLive = path.join(ARDENT_DATA_DIR, '/locations.db')
+  const pathToLocationsDbBackup = path.join(EDDATA_BACKUP_DIR, '/locations.db')
+  const pathToLocationsDbLive = path.join(EDDATA_DATA_DIR, '/locations.db')
 
-  const pathToTradeDbBackup = path.join(ARDENT_BACKUP_DIR, '/trade.db')
-  const pathToTradeDbLive = path.join(ARDENT_DATA_DIR, '/trade.db')
+  const pathToTradeDbBackup = path.join(EDDATA_BACKUP_DIR, '/trade.db')
+  const pathToTradeDbLive = path.join(EDDATA_DATA_DIR, '/trade.db')
 
-  const pathToStationsDbBackup = path.join(ARDENT_BACKUP_DIR, '/stations.db')
-  const pathToStationsLive = path.join(ARDENT_DATA_DIR, '/stations.db')
+  const pathToStationsDbBackup = path.join(EDDATA_BACKUP_DIR, '/stations.db')
+  const pathToStationsLive = path.join(EDDATA_DATA_DIR, '/stations.db')
 
-  const pathToSystemsDbBackup = path.join(ARDENT_BACKUP_DIR, '/systems.db')
-  const pathToSystemsDbLive = path.join(ARDENT_DATA_DIR, '/systems.db')
+  const pathToSystemsDbBackup = path.join(EDDATA_BACKUP_DIR, '/systems.db')
+  const pathToSystemsDbLive = path.join(EDDATA_DATA_DIR, '/systems.db')
 
-  if (!fs.existsSync(ARDENT_DATA_DIR)) { fs.mkdirSync(ARDENT_DATA_DIR, { recursive: true }) }
+  if (!fs.existsSync(EDDATA_DATA_DIR)) { fs.mkdirSync(EDDATA_DATA_DIR, { recursive: true }) }
 
   restoreDatabaseFromBackup(pathToLocationsDbBackup, pathToLocationsDbLive)
   restoreDatabaseFromBackup(pathToTradeDbBackup, pathToTradeDbLive)
