@@ -68,6 +68,7 @@ volumes:
 networks:
   eddata-network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
+    # Let Docker automatically assign subnet to avoid conflicts
+    # ipam:
+    #   config:
+    #     - subnet: 172.20.0.0/16
