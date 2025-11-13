@@ -144,4 +144,4 @@ junit.xml
 # Build artifacts
 build/
 dist/
-lib/
+# Note: lib/ contains source code, not build artifacts!
