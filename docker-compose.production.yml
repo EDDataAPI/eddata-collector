@@ -1,7 +1,9 @@
-version: '3.8'
-
 services:
   eddata-collector:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
     image: ghcr.io/eddataapi/eddata-collector:latest
     container_name: eddata-collector-prod
     restart: unless-stopped
