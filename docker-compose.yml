@@ -5,7 +5,8 @@ services:
       dockerfile: Dockerfile
       target: production
     image: ghcr.io/eddataapi/eddata-collector:latest
-    container_name: eddata-collector
+    # Let Dokploy manage container naming
+    # container_name: eddata-collector
     restart: unless-stopped
     ports:
       - "${EDDATA_COLLECTOR_PORT:-3002}:3002"
@@ -48,8 +49,9 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    networks:
-      - eddata-network
+    # Remove custom network - let Dokploy manage networking
+    # networks:
+    #   - eddata-network
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.eddata-collector.rule=Host(`collector.eddata.api.com`)"
@@ -65,10 +67,7 @@ volumes:
   eddata-logs:
     driver: local
 
-networks:
-  eddata-network:
-    driver: bridge
-    # Let Docker automatically assign subnet to avoid conflicts
-    # ipam:
-    #   config:
-    #     - subnet: 172.20.0.0/16
+# Remove custom network definition - Dokploy manages this
+# networks:
+#   eddata-network:
+#     driver: bridge
