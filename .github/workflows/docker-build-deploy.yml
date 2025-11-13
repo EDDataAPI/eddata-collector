@@ -98,7 +98,9 @@ jobs:
     - name: Output image
       id: image
       run: |
-        echo "image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}" >> $GITHUB_OUTPUT
+        # GitHub Container Registry requires lowercase repository names
+        IMAGE_NAME_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+        echo "image=${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}@${{ steps.build.outputs.digest }}" >> $GITHUB_OUTPUT
 
   security-scan:
     name: Security Scan
@@ -111,6 +113,16 @@ jobs:
       security-events: write
 
     steps:
+    - name: Wait for image to be available
+      run: sleep 10
+      
+    - name: Login to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@master
       with:
