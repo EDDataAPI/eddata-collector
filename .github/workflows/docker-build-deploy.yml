@@ -113,15 +113,19 @@ jobs:
       security-events: write
 
     steps:
-    - name: Wait for image to be available
-      run: sleep 10
-      
     - name: Login to Container Registry
       uses: docker/login-action@v3
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+      
+    - name: Wait for image to be available and pull
+      run: |
+        echo "Waiting for multi-platform image to be fully available..."
+        sleep 30
+        echo "Attempting to pull image..."
+        docker pull ${{ needs.build-and-push.outputs.image }} || echo "Pull failed, will try with Trivy remote scan"
       
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@master
