@@ -1,5 +1,5 @@
-const { systemsDb, locationsDb, stationsDb, tradeDb } = require('../lib/db')
-const { getISOTimestamp } = require('../lib/utils/dates')
+// const { systemsDb, locationsDb, stationsDb, tradeDb } = require('../lib/db')
+// const { getISOTimestamp } = require('../lib/utils/dates')
 
 // The purpose of this is to be a place for any logic that needs to run at
 // startup, before the service goes back online. It is not a script in the

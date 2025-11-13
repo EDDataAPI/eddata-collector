@@ -4,55 +4,9 @@ const os = require('os')
 const checkDiskSpace = require('check-disk-space').default
 const byteSize = require('byte-size')
 
-// Modern replacement for fast-folder-size to avoid fs.Stats deprecation warning
-// Uses async operations with depth limiting and symlink protection
-async function getFolderSizeAsync (folderPath, maxDepth = 50) {
-  let totalSize = 0
-  const visited = new Set() // Track visited paths to avoid symlink loops
-
-  async function calculateSize (dirPath, currentDepth = 0) {
-    if (currentDepth > maxDepth) {
-      console.warn(`Warning: Maximum depth (${maxDepth}) reached for ${dirPath}`)
-      return
-    }
-
-    try {
-      const realPath = fs.realpathSync(dirPath)
-      if (visited.has(realPath)) {
-        return // Avoid circular symlinks
-      }
-      visited.add(realPath)
-
-      const items = await fs.promises.readdir(dirPath, { withFileTypes: true })
-
-      for (const item of items) {
-        const fullPath = path.join(dirPath, item.name)
-
-        if (item.isFile()) {
-          const stats = await fs.promises.stat(fullPath)
-          totalSize += stats.size
-        } else if (item.isDirectory()) {
-          await calculateSize(fullPath, currentDepth + 1)
-        }
-        // Skip symbolic links, sockets, FIFOs, etc.
-      }
-    } catch (error) {
-      // Ignore permission errors or missing directories
-      console.warn(`Warning: Could not access ${dirPath}:`, error.message)
-    }
-  }
-
-  if (fs.existsSync(folderPath)) {
-    await calculateSize(folderPath)
-  }
-
-  return totalSize
-}
-
-// Synchronous wrapper for backward compatibility (blocking but safe)
+// Synchronous folder size calculation with depth limiting
+// Used for pre-backup disk space checks
 function getFolderSizeSync (folderPath) {
-  // For backup scenarios, we can use the async version directly since backup is already async
-  // This is a temporary sync wrapper - the caller should use await getFolderSizeAsync() instead
   try {
     let totalSize = 0
     const visited = new Set()
