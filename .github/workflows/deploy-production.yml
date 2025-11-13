@@ -1,0 +1,60 @@
+name: Deploy Ardent Collector to Production
+
+# ABOUT
+#
+# This deployment script assumes the following are configured in GitHub actions:
+#
+#  SSH_PRIVATE_KEY [secret]
+#  DEPLOY_HOST [variable]
+#  DEPLOY_USER [variable]
+#  DEPLOY_DIR [variable]
+#
+# Note:
+# * DEPLOY_DIR should be an absolute path.
+# * SERVICE_NAME should match the name of the repository in GitHub.
+#
+# SETUP
+#
+# This script assumes that Node.js is installed, that "pm2" is installed 
+# globally and that pm2 has been used to already run the program once, as the 
+# same user the deploy script will run as (which should not be root).
+#
+# How to install pm2 and configure pm2 to run at startup:
+#  npm i pm2 -g
+#  pm2 startup
+#
+# An example of how to start this program using pm2:
+#  export DEPLOY_DIR=/opt/ardent
+#  export SERVICE_NAME=ardent-collector
+#  cd $DEPLOY_DIR}/SERVICE_NAME
+#  pm2 start npm --name "$SERVICE_NAME" -- run start
+#  pm2 save
+
+on:
+  push:
+    branches: [ "main" ]
+
+env:
+  SERVICE_NAME: ${{ github.event.repository.name }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Deploy to Server
+      uses: easingthemes/ssh-deploy@main
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        ARGS: "-rlgoDzvc -i --delete"
+        SOURCE: "./"
+        REMOTE_HOST: ${{ vars.DEPLOY_HOST }}
+        REMOTE_USER: ${{ vars.DEPLOY_USER }}
+        TARGET: "${{ vars.DEPLOY_DIR }}/${{ env.SERVICE_NAME }}"
+        EXCLUDE: ".git*, *.md, LICENSE, node_modules/"
+        SCRIPT_AFTER: |
+          cd "${{ vars.DEPLOY_DIR }}/${{ env.SERVICE_NAME }}"
+          npm install --omit=dev 
+          pm2 restart "${{ env.SERVICE_NAME }}" --cron-restart="0 9 * * 4" --log-date-format="YYYY-MM-DD HH:mm Z"
+          pm2 save
+          echo $RSYNC_STDOUT

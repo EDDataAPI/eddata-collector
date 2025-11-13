@@ -1,0 +1,33 @@
+{
+  "$schemaRef": "https://eddn.edcd.io/schemas/journal/1",
+  "header": {
+    "gamebuild": "r294054/r0 ",
+    "gameversion": "4.0.0.1502",
+    "gatewayTimestamp": "2023-07-15T20:44:26.649301Z",
+    "softwareName": "EDDiscovery",
+    "softwareVersion": "16.2.0.0",
+    "uploaderID": "a0d4a61e360fc5745cea5b0c13f224e4ba8f0835"
+  },
+  "message": {
+    "Body": "Praea Euq UF-R c4-13",
+    "BodyID": 0,
+    "BodyType": "Star",
+    "Population": 0,
+    "StarPos": [
+      999.0625,
+      -24.71875,
+      426.90625
+    ],
+    "StarSystem": "Praea Euq UF-R c4-13",
+    "SystemAddress": 3658943042346,
+    "SystemAllegiance": "",
+    "SystemEconomy": "$economy_None;",
+    "SystemGovernment": "$government_None;",
+    "SystemSecondEconomy": "$economy_None;",
+    "SystemSecurity": "$GAlAXY_MAP_INFO_state_anarchy;",
+    "event": "FSDJump",
+    "horizons": true,
+    "odyssey": true,
+    "timestamp": "2023-07-15T20:44:22Z"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "name": "ardent-collector",
+  "version": "3.1.1",
+  "description": "Ardent Collector saves data submitted to EDDN",
+  "main": "index.js",
+  "scripts": {
+    "start": "node --disable-warning=DEP0180 index.js",
+    "dev": "cross-env NODE_ENV=development node --disable-warning=DEP0180 index.js",
+    "test": "node tests",
+    "download": "node --disable-warning=DEP0180 scripts/download.js",
+    "backup": "node --disable-warning=DEP0180 scripts/backup.js",
+    "backup:compress": "node --disable-warning=DEP0180 scripts/backup-compress.js",
+    "restore": "node --disable-warning=DEP0180 scripts/restore.js",
+    "optimize": "node --disable-warning=DEP0180 scripts/optimize.js",
+    "stats": "npm run stats:database && npm run stats:commodity",
+    "stats:database": "node --disable-warning=DEP0180 scripts/stats/database-stats.js",
+    "stats:commodity": "node --disable-warning=DEP0180 scripts/stats/commodity-stats.js",
+    "lint": "npx standard --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iaincollins/ardent-collector.git"
+  },
+  "author": "",
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/iaincollins/ardent-collector/issues"
+  },
+  "homepage": "https://github.com/iaincollins/ardent-collector#readme",
+  "dependencies": {
+    "@koa/router": "^14.0.0",
+    "better-sqlite3": "^12.4.1",
+    "byte-size": "^9.0.1",
+    "check-disk-space": "^3.4.0",
+    "cross-env": "^10.1.0",
+    "dotenv": "^17.2.3",
+    "koa": "^3.1.1",
+    "koa-bodyparser": "^4.4.1",
+    "node-cron": "^4.2.1",
+    "zeromq": "^6.5.0"
+  },
+  "devDependencies": {
+    "standard": "^17.1.0"
+  },
+  "engines": {
+    "npm": ">=10.0.0",
+    "node": ">=24.11.0"
+  }
+}

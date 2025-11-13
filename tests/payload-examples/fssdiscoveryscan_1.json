@@ -1,0 +1,26 @@
+{
+  "$schemaRef": "https://eddn.edcd.io/schemas/fssdiscoveryscan/1",
+  "header": {
+    "gamebuild": "r291050/r0 ",
+    "gameversion": "4.0.0.1477",
+    "gatewayTimestamp": "2023-04-19T09:01:17.927689Z",
+    "softwareName": "EDDI",
+    "softwareVersion": "4.0.2",
+    "uploaderID": "fbd4c934e29a43999ce29960ba4efa236b066b78"
+  },
+  "message": {
+    "BodyCount": 9,
+    "NonBodyCount": 93,
+    "StarPos": [
+      66.84375,
+      21.84375,
+      27.46875
+    ],
+    "SystemAddress": 6406178640602,
+    "SystemName": "Eravarenth",
+    "event": "FSSDiscoveryScan",
+    "horizons": true,
+    "odyssey": false,
+    "timestamp": "2023-04-19T09:01:15Z"
+  }
+}

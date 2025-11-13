@@ -1,0 +1,70 @@
+{
+  "$schemaRef": "https://eddn.edcd.io/schemas/journal/1",
+  "header": {
+    "gamebuild": "r294054/r0 ",
+    "gameversion": "4.0.0.1502",
+    "gatewayTimestamp": "2023-07-15T20:44:25.396748Z",
+    "softwareName": "E:D Market Connector [Windows]",
+    "softwareVersion": "5.8.1",
+    "uploaderID": "8378a99367a2c7ab1c96383d736838227aed4578"
+  },
+  "message": {
+    "AscendingNode": -138.905724,
+    "Atmosphere": "hot water atmosphere",
+    "AtmosphereComposition": [
+      {
+        "Name": "Water",
+        "Percent": 100
+      }
+    ],
+    "AtmosphereType": "Water",
+    "AxialTilt": 0.061347,
+    "BodyID": 4,
+    "BodyName": "Xi Wangda A 2",
+    "Composition": {
+      "Ice": 0,
+      "Metal": 0.33239,
+      "Rock": 0.66761
+    },
+    "DistanceFromArrivalLS": 94.564217,
+    "Eccentricity": 0.000824,
+    "Landable": false,
+    "MassEM": 0.003667,
+    "MeanAnomaly": 299.22359,
+    "OrbitalInclination": -0.00041,
+    "OrbitalPeriod": 4188553.869724,
+    "Parents": [
+      {
+        "Star": 1
+      },
+      {
+        "Null": 0
+      }
+    ],
+    "Periapsis": 121.903649,
+    "PlanetClass": "High metal content body",
+    "Radius": 1014623.75,
+    "RotationPeriod": 4188555.859722,
+    "ScanType": "NavBeaconDetail",
+    "SemiMajorAxis": 28361036181.44989,
+    "StarPos": [
+      -21.8125,
+      -167,
+      -19.71875
+    ],
+    "StarSystem": "Xi Wangda",
+    "SurfaceGravity": 1.419867,
+    "SurfacePressure": 53441.132813,
+    "SurfaceTemperature": 525.149536,
+    "SystemAddress": 2869708727713,
+    "TerraformState": "",
+    "TidalLock": true,
+    "Volcanism": "",
+    "WasDiscovered": false,
+    "WasMapped": true,
+    "event": "Scan",
+    "horizons": true,
+    "odyssey": false,
+    "timestamp": "2023-07-15T20:44:24Z"
+  }
+}

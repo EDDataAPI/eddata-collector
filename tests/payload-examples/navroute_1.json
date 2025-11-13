@@ -1,0 +1,37 @@
+{
+  "$schemaRef": "https://eddn.edcd.io/schemas/navroute/1",
+  "header": {
+    "gamebuild": "r291050/r0 ",
+    "gameversion": "4.0.0.1477",
+    "gatewayTimestamp": "2023-04-19T09:01:36.683235Z",
+    "softwareName": "E:D Market Connector [Windows]",
+    "softwareVersion": "5.8.1",
+    "uploaderID": "3924815829a6f2e47c4a203c7badb9e834681af0"
+  },
+  "message": {
+    "Route": [
+      {
+        "StarClass": "M",
+        "StarPos": [
+          -119.09375,
+          -67.6875,
+          -14.375
+        ],
+        "StarSystem": "Wembal",
+        "SystemAddress": 669343622561
+      },
+      {
+        "StarClass": "G",
+        "StarPos": [
+          -126.4375,
+          -50.5,
+          -9.9375
+        ],
+        "StarSystem": "Pegasi Sector GW-W d1-84",
+        "SystemAddress": 2896678603115
+      }
+    ],
+    "event": "NavRoute",
+    "timestamp": "2023-04-19T09:01:35Z"
+  }
+}

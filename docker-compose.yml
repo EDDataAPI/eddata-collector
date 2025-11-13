@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  ardent-collector:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ghcr.io/edtoolbox/ardent-collector:latest
+    container_name: ardent-collector
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    volumes:
+      # Persist data directories
+      - ardent-data:/app/ardent-data
+      - ardent-backup:/app/ardent-backup
+      - ardent-downloads:/app/ardent-downloads
+      # Optional: mount config file
+      # - ./ardent.config:/app/ardent.config:ro
+    environment:
+      - NODE_ENV=production
+      - ARDENT_COLLECTOR_LOCAL_PORT=3002
+      # Add other environment variables as needed
+      # - EDDN_SERVER=tcp://eddn.edcd.io:9500
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3002', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - ardent-network
+
+volumes:
+  ardent-data:
+    driver: local
+  ardent-backup:
+    driver: local
+  ardent-downloads:
+    driver: local
+
+networks:
+  ardent-network:
+    driver: bridge
