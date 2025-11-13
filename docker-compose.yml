@@ -38,7 +38,7 @@ services:
       - MAINTENANCE_WINDOW_START_HOUR=${MAINTENANCE_WINDOW_START_HOUR:-2}
       - MAINTENANCE_WINDOW_END_HOUR=${MAINTENANCE_WINDOW_END_HOUR:-6}
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3002/health || exit 1"]
+      test: ["CMD", "node", "-e", "const http = require('http'); const options = { hostname: 'localhost', port: 3002, path: '/health', timeout: 5000 }; const req = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1)); req.on('timeout', () => process.exit(1)); req.end();"]
       interval: 30s
       timeout: 10s
       retries: 3
