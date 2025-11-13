@@ -1,58 +1,82 @@
-# Multi-stage build for optimal image size
-FROM node:24.11.0-alpine AS builder
+# Multi-stage build for optimal image size and security
+FROM node:24.11.0-alpine AS base
 
-# Set working directory
-WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies (including dev dependencies for build)
-RUN npm ci --only=production
-
-# Production stage
-FROM node:24.11.0-alpine
-
-# Install runtime dependencies for better-sqlite3 and zeromq
+# Install system dependencies for native modules
 RUN apk add --no-cache \
     python3 \
     make \
     g++ \
     libzmq \
-    zeromq-dev
+    zeromq-dev \
+    && rm -rf /var/cache/apk/*
+
+# Build stage
+FROM base AS builder
+
+WORKDIR /app
+
+# Copy package files first for better caching
+COPY package*.json ./
+
+# Install all dependencies (including devDependencies for building native modules)
+RUN npm ci --include=dev && \
+    npm rebuild better-sqlite3 zeromq && \
+    npm prune --production && \
+    npm cache clean --force
+
+# Production stage
+FROM base AS production
 
 # Create app user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+RUN addgroup -g 1001 -S eddata && \
+    adduser -S eddata -u 1001 -G eddata
 
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy built node_modules from builder stage
+COPY --from=builder --chown=eddata:eddata /app/node_modules ./node_modules
 
-# Install production dependencies
-RUN npm ci --only=production && \
-    npm cache clean --force
+# Copy package files
+COPY --chown=eddata:eddata package*.json ./
 
 # Copy application files
-COPY --chown=nodejs:nodejs . .
+COPY --chown=eddata:eddata . .
 
 # Create necessary directories with correct permissions
-RUN mkdir -p /app/ardent-data/cache && \
-    mkdir -p /app/ardent-backup && \
-    mkdir -p /app/ardent-downloads && \
-    chown -R nodejs:nodejs /app
+RUN mkdir -p /app/eddata-data/cache && \
+    mkdir -p /app/eddata-backup && \
+    mkdir -p /app/eddata-downloads && \
+    chown -R eddata:eddata /app
 
 # Switch to non-root user
-USER nodejs
+USER eddata
 
 # Expose port (default 3002)
 EXPOSE 3002
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3002', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"
+# Add labels for better maintainability
+LABEL org.opencontainers.image.title="EDData Collector"
+LABEL org.opencontainers.image.description="Elite Dangerous Data Collector for EDDN data"
+LABEL org.opencontainers.image.vendor="EDDataAPI"
+LABEL org.opencontainers.image.source="https://github.com/EDDataAPI/eddata-collector"
+
+# Health check with more robust endpoint testing
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD node -e " \
+        const http = require('http'); \
+        const options = { \
+            hostname: 'localhost', \
+            port: process.env.EDDATA_COLLECTOR_LOCAL_PORT || 3002, \
+            path: '/health', \
+            timeout: 5000 \
+        }; \
+        const req = http.request(options, (res) => { \
+            process.exit(res.statusCode === 200 ? 0 : 1); \
+        }); \
+        req.on('error', () => process.exit(1)); \
+        req.on('timeout', () => process.exit(1)); \
+        req.end();" || exit 1
 
 # Start application
 CMD ["npm", "start"]

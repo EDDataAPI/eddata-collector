@@ -1,7 +1,7 @@
 {
-  "name": "ardent-collector",
-  "version": "3.1.1",
-  "description": "Ardent Collector saves data submitted to EDDN",
+  "name": "eddata-collector",
+  "version": "1.0.0",
+  "description": "Elite Dangerous Data Collector - Collects and processes EDDN data for the EDData API",
   "main": "index.js",
   "scripts": {
     "start": "node --disable-warning=DEP0180 index.js",
@@ -15,18 +15,22 @@
     "stats": "npm run stats:database && npm run stats:commodity",
     "stats:database": "node --disable-warning=DEP0180 scripts/stats/database-stats.js",
     "stats:commodity": "node --disable-warning=DEP0180 scripts/stats/commodity-stats.js",
-    "lint": "npx standard --fix"
+    "lint": "npx standard --fix",
+    "docker:build": "docker build -t eddata-collector .",
+    "docker:run": "docker-compose up -d",
+    "docker:stop": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/iaincollins/ardent-collector.git"
+    "url": "git+https://github.com/EDDataAPI/eddata-collector.git"
   },
-  "author": "",
+  "author": "EDDataAPI Team",
   "license": "AGPL-3.0",
   "bugs": {
-    "url": "https://github.com/iaincollins/ardent-collector/issues"
+    "url": "https://github.com/EDDataAPI/eddata-collector/issues"
   },
-  "homepage": "https://github.com/iaincollins/ardent-collector#readme",
+  "homepage": "https://github.com/EDDataAPI/eddata-collector#readme",
   "dependencies": {
     "@koa/router": "^14.0.0",
     "better-sqlite3": "^12.4.1",

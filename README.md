@@ -1,114 +1,402 @@
-# Ardent Collector
+# EDData Collector
 
-## About this software
+[![Docker Build and Deploy](https://github.com/EDDataAPI/eddata-collector/actions/workflows/docker-build-deploy.yml/badge.svg)](https://github.com/EDDataAPI/eddata-collector/actions/workflows/docker-build-deploy.yml)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%203.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![Node.js Version](https://img.shields.io/badge/Node.js-24.11.0-green.svg)](https://nodejs.org/)
+[![Docker Image](https://img.shields.io/badge/Docker-ghcr.io%2Feddataapi%2Feddata--collector-blue)](https://github.com/EDDataAPI/eddata-collector/pkgs/container/eddata-collector)
 
-The Ardent Collector gathers data submitted to the [Elite Dangerous Data Network](https://github.com/EDCD/EDDN).
+## 🚀 About This Software
 
-Ardent has details for over 150,000,000 star systems and over 30,000,000 trade 
-orders for commodities and information across markets on over 300,000 stations,
-ports, settlements and fleet carriers throughout the galaxy, with millions of 
-updates per day.
+The EDData Collector gathers data submitted to the [Elite Dangerous Data Network (EDDN)](https://github.com/EDCD/EDDN) and makes it available through the EDData API.
 
-The Ardent Collector writes data it gathers to relational databases and 
-generates reports from the data (e.g. summaries of commodity supply and demand 
-and trade reports for different regions) and provides access to the data via 
-the [Ardent API](https://github.com/iaincollins/ardent-api) and raw data dumps.
+### 📊 Data Scope
 
-Related repositories:
+- **🌌 Over 150 million star systems** with detailed information
+- **🏪 Over 30 million trade orders** for commodities and markets  
+- **🚀 Over 300,000 stations, ports, settlements and fleet carriers**
+- **📈 Millions of daily updates** from the Elite Dangerous community
 
-* https://github.com/iaincollins/ardent-www
-* https://github.com/iaincollins/ardent-api
-* https://github.com/iaincollins/ardent-auth
+### 🔧 Features
 
-## Notes
+- **Real-time data collection** from EDDN ZeroMQ stream
+- **Relational databases** for structured data storage
+- **Automated reports** on commodity supply, demand and trade routes
+- **RESTful API** for data access
+- **Docker-based deployment** for easy installation and scaling
 
-This software assumes an internet connection as it attempts to connect to the 
-the EDDN (Elite Dangerous Data Network) ZeroMQ instance at 
-tcp://eddn.edcd.io:9500 at startup to receive a data stream.
+### 🔗 Related Repositories
 
-This software requires Node.js v24.11.0 or later. The recommended version is Node.js v24.x, as specified in the `.nvmrc` and `.node-version` files.
-The project is tested in CI with Node.js v24.x and the latest LTS release (`lts/*`), and is expected to work with all of these versions.
-Dependencies have been updated to ensure compatibility with the latest Node.js releases and modern JavaScript features.
+* [EDData API](https://github.com/EDDataAPI/eddata-api) - REST API for data access
+* [EDData Web](https://github.com/EDDataAPI/eddata-web) - Web interface for the data
+* [EDData Auth](https://github.com/EDDataAPI/eddata-auth) - Authentication service
 
-After doing `npm install` you can run the service with `npm start`.
+## 🛠️ Installation
 
-You may need to run `npm run stats` at least once to generate cached data and 
-avoid errors being displayed at start up. Database stats are automatically generated 
-daily at 6:00 AM, and commodity stats are automatically generated weekly after the 
-maintenance window completes.
+### 📋 System Requirements
 
-## Docker
+- **Node.js v24.11.0 or higher** (recommended: v24.x LTS)
+- **Docker** and **Docker Compose** (for container deployment)
+- **Internet connection** for EDDN connectivity
+- **Sufficient disk space** for databases (several GB)
 
-The Ardent Collector is available as a Docker image hosted on GitHub Container Registry.
-
-### Quick Start with Docker
+### 🚀 Quick Start with Docker (Recommended)
 
 ```bash
-# Pull the latest image
-docker pull ghcr.io/edtoolbox/ardent-collector:latest
+# Clone repository
+git clone https://github.com/EDDataAPI/eddata-collector.git
+cd eddata-collector
 
-# Run with Docker
-docker run -d \
-  --name ardent-collector \
-  -p 3002:3002 \
-  -v ardent-data:/app/ardent-data \
-  -v ardent-backup:/app/ardent-backup \
-  -v ardent-downloads:/app/ardent-downloads \
-  ghcr.io/edtoolbox/ardent-collector:latest
-```
-
-### Using Docker Compose
-
-```bash
-# Start the service
+# Start with Docker Compose
 docker-compose up -d
 
 # View logs
-docker-compose logs -f
+docker-compose logs -f eddata-collector
 
-# Stop the service
-docker-compose down
+# Check status
+curl http://localhost:3002
 ```
 
-### Building Locally
+### 🐳 Docker Images
+
+The EDData Collector is available as a Docker image:
 
 ```bash
-# Build the image
-docker build -t ardent-collector .
+# Pull latest version
+docker pull ghcr.io/eddataapi/eddata-collector:latest
 
-# Run locally built image
-docker run -d -p 3002:3002 ardent-collector
+# Run directly
+docker run -d \
+  --name eddata-collector \
+  -p 3002:3002 \
+  -v eddata-data:/app/eddata-data \
+  -v eddata-backup:/app/eddata-backup \
+  -v eddata-downloads:/app/eddata-downloads \
+  ghcr.io/eddataapi/eddata-collector:latest
 ```
 
-### Environment Variables
+### 🔧 Available Docker Images
 
-You can configure the collector using environment variables:
+- `ghcr.io/eddataapi/eddata-collector:latest` - Latest stable version
+- `ghcr.io/eddataapi/eddata-collector:v1.0.0` - Specific version
+- `ghcr.io/eddataapi/eddata-collector:main` - Main development branch
 
-- `NODE_ENV`: Set to `production` for production use
-- `ARDENT_COLLECTOR_LOCAL_PORT`: Port to listen on (default: 3002)
+### 🏗️ Local Development
+
+```bash
+# Clone repository
+git clone https://github.com/EDDataAPI/eddata-collector.git
+cd eddata-collector
+
+# Install dependencies
+npm install
+
+# Start development mode
+npm run dev
+
+# Run tests
+npm test
+
+# Production build
+npm start
+```
+
+### 🔨 Build Docker Image Yourself
+
+```bash
+# Using the provided script (Linux/macOS)
+./scripts/build-docker.sh
+
+# Using the Windows script
+./scripts/build-docker.bat
+
+# Or manually
+docker build -t eddata-collector .
+```
+
+## ⚙️ Configuration
+
+### 🌍 Environment Variables
+
+The EDData Collector can be configured via environment variables:
+
+#### 🔌 Network & Ports
+- `EDDATA_COLLECTOR_LOCAL_PORT`: Server port (default: 3002)
 - `EDDN_SERVER`: EDDN server URL (default: tcp://eddn.edcd.io:9500)
 
-See `lib/consts.js` for all available configuration options.
+#### 📂 Directories
+- `EDDATA_DATA_DIR`: Data directory (default: ./eddata-data)
+- `EDDATA_CACHE_DIR`: Cache directory (default: ./eddata-data/cache)
+- `EDDATA_BACKUP_DIR`: Backup directory (default: ./eddata-backup)
+- `EDDATA_DOWNLOADS_DIR`: Downloads directory (default: ./eddata-downloads)
 
-## Credits
+#### 🗄️ Databases
+- `EDDATA_SYSTEMS_DB`: Systems database path
+- `EDDATA_LOCATIONS_DB`: Locations database path
+- `EDDATA_STATIONS_DB`: Stations database path
+- `EDDATA_TRADE_DB`: Trade database path
 
-_This software would not be possible without work from dozens of enthusiasts 
-and hundreds of open source contributors._
+#### 🛠️ Maintenance
+- `MAINTENANCE_DAY_OF_WEEK`: Maintenance day (default: 4 = Thursday)
+- `MAINTENANCE_WINDOW_START_HOUR`: Maintenance start (default: 7 AM UTC)
+- `MAINTENANCE_WINDOW_END_HOUR`: Maintenance end (default: 9 AM UTC)
 
-Special thanks to Elite Dangerous Community Developers members, Elite 
-Dangerous Data Network maintainers, Anthor (Elite Dangerous Star Map) 
-and Gareth Harper (Spansh).
+### 📄 Configuration File
 
-Thank you to all those who have created and supported libraries on which this 
-software depends and to Frontier Developments plc for supporting third party 
-tools.
+Create an `eddata.config` file for advanced configuration:
 
-## Legal
+```bash
+# eddata.config example
+NODE_ENV=production
+EDDATA_COLLECTOR_LOCAL_PORT=3002
+EDDATA_DOMAIN=your-domain.com
+LOG_LEVEL=info
+```
 
-Copyright Iain Collins, 2023.
+## 🚀 Deployment
 
-This software has been released under the GNU Affero General Public License.
+### 🏠 Local Development
 
-Elite Dangerous is copyright Frontier Developments plc. This software is 
-not endorsed by nor reflects the views or opinions of Frontier Developments and 
-no employee of Frontier Developments was involved in the making of it.
+```bash
+# Start development environment
+docker-compose -f docker-compose.yml up -d
+```
+
+### 🧪 Staging
+
+```bash
+# Staging environment
+docker-compose -f docker-compose.staging.yml up -d
+```
+
+### 🌐 Production
+
+```bash
+# Production environment
+docker-compose -f docker-compose.production.yml up -d
+
+# With monitoring (optional)
+docker-compose -f docker-compose.production.yml --profile monitoring up -d
+```
+
+### 📊 Management Scripts
+
+```bash
+# Run build script
+npm run docker:build
+
+# Deployment script
+node scripts/deploy.js deploy --env=production
+
+# Check status
+node scripts/deploy.js status --env=production
+
+# View logs
+npm run docker:logs
+```
+
+## 🔄 API Endpoints
+
+The EDData Collector provides several API endpoints:
+
+- `GET /` - System statistics and health status
+- `GET /health` - Simple health check for load balancers
+- `POST /api/v1/data` - Receive data from EDDN (internal)
+
+## 📈 Monitoring
+
+### 🏥 Health Checks
+
+The service has built-in health checks:
+
+```bash
+# Basic status
+curl http://localhost:3002/
+
+# Simple health check
+curl http://localhost:3002/health
+
+# Docker health check
+docker ps --filter "name=eddata-collector"
+```
+
+### 📊 Metrics (Optional)
+
+You can enable monitoring with the production Docker Compose stack:
+
+```bash
+# Start with Prometheus and Grafana
+docker-compose -f docker-compose.production.yml --profile monitoring up -d
+
+# Prometheus: http://localhost:9090
+# Grafana: http://localhost:3000 (admin/admin)
+```
+
+## 🔧 Maintenance
+
+### 🗄️ Database Optimization
+
+```bash
+# Generate database statistics
+npm run stats
+
+# Optimize databases
+npm run optimize
+
+# Create backup
+npm run backup
+```
+
+### 🧹 Automatic Maintenance
+
+The service automatically performs weekly maintenance:
+
+- **Default: Thursday 7:00-9:00 UTC** (corresponding to Elite Dangerous maintenance)
+- Clean old data
+- Optimize databases
+- Create backups
+
+### 📁 Backup & Restore
+
+```bash
+# Manual backup
+npm run backup
+
+# Compressed backup
+npm run backup:compress
+
+# Restore
+npm run restore
+```
+
+## 🛠️ Development
+
+### 🧪 Running Tests
+
+```bash
+# All tests
+npm test
+
+# Linting
+npm run lint
+
+# Linting with automatic fixes
+npm run lint -- --fix
+```
+
+### 🔍 Debugging
+
+```bash
+# Debug mode
+DEBUG=* npm run dev
+
+# With specific debug namespaces
+DEBUG=eddata:* npm run dev
+
+# Verbose logging
+NODE_ENV=development npm start
+```
+
+### 🐳 Local Docker Development
+
+```bash
+# Development container
+docker-compose -f docker-compose.yml up --build
+
+# Shell in container
+docker-compose exec eddata-collector /bin/sh
+
+# Follow logs
+docker-compose logs -f eddata-collector
+```
+
+## 🚨 Troubleshooting
+
+### ❓ Common Issues
+
+**Port already in use:**
+```bash
+# Change port
+export EDDATA_COLLECTOR_PORT=3003
+docker-compose up -d
+```
+
+**Disk space full:**
+```bash
+# Clean old data
+npm run optimize
+
+# Clean Docker images
+docker system prune -a
+```
+
+**EDDN connection failed:**
+```bash
+# Check network connectivity
+telnet eddn.edcd.io 9500
+
+# Use alternative EDDN server
+export EDDN_SERVER=tcp://alternative.eddn.server:9500
+```
+
+### 📝 Log Analysis
+
+```bash
+# Container logs
+docker-compose logs -f --tail=100 eddata-collector
+
+# System logs (Linux)
+journalctl -u docker -f
+
+# Increase log level
+export LOG_LEVEL=debug
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+### 📋 Setting Up Development Environment
+
+```bash
+# Fork and clone repository
+git clone https://github.com/YOUR_USERNAME/eddata-collector.git
+cd eddata-collector
+
+# Set up development environment
+npm install
+npm run dev
+
+# Run tests
+npm test
+```
+
+### 🔀 Pull Request Guidelines
+
+1. Create feature branch: `git checkout -b feature/new-feature`
+2. Add tests for new functionality
+3. Check linting: `npm run lint`
+4. Commit messages: Use [Conventional Commits](https://conventionalcommits.org/)
+5. Create pull request
+
+## 🙏 Acknowledgments
+
+_This software would not be possible without the work of dozens of enthusiasts and hundreds of open-source contributors._
+
+Special thanks to:
+
+- **Elite Dangerous Community Developers** - For the EDDN infrastructure
+- **Elite Dangerous Data Network Maintainers** - For data provision
+- **Anthor** - Elite Dangerous Star Map (EDSM)
+- **Gareth Harper** - Spansh.co.uk
+- **Frontier Developments plc** - For supporting third-party tools
+- **The entire Elite Dangerous Community** - For data submissions and feedback
+
+### 🔗 Related Projects
+
+- [EDDN (Elite Dangerous Data Network)](https://github.com/EDCD/EDDN)
+- [EDCD (Elite Dangerous Community Developers)](https://github.com/EDCD)
+- [EDSM (Elite Dangerous Star Map)](https://www.edsm.net/)
+- [Spansh](https://spansh.co.uk/)
+- [EDDB](https://eddb.io/)
+
+For detailed contributor information, licensing details, and legal notices, see [AUTHORS.md](AUTHORS.md).

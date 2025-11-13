@@ -1,0 +1,77 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Einfache Changelog-Generierung zwischen letzten zwei Tags
+        PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+        if [ -n "$PREVIOUS_TAG" ]; then
+          CHANGELOG=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges)
+        else
+          CHANGELOG=$(git log --pretty=format:"- %s (%h)" --no-merges)
+        fi
+        
+        # Escape newlines for GitHub output
+        CHANGELOG="${CHANGELOG//'%'/'%25'}"
+        CHANGELOG="${CHANGELOG//$'\n'/'%0A'}"
+        CHANGELOG="${CHANGELOG//$'\r'/'%0D'}"
+        
+        echo "changelog=${CHANGELOG}" >> $GITHUB_OUTPUT
+
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref_name }}
+        release_name: EDData Collector ${{ github.ref_name }}
+        body: |
+          ## 🚀 EDData Collector ${{ github.ref_name }}
+          
+          ### Changes
+          ${{ steps.changelog.outputs.changelog }}
+          
+          ### Docker Images
+          - `ghcr.io/eddataapi/eddata-collector:${{ github.ref_name }}`
+          - `ghcr.io/eddataapi/eddata-collector:latest`
+          
+          ### Installation
+          ```bash
+          # Mit Docker Compose
+          curl -O https://raw.githubusercontent.com/EDDataAPI/eddata-collector/${{ github.ref_name }}/docker-compose.yml
+          docker-compose up -d
+          
+          # Direkt mit Docker
+          docker run -d --name eddata-collector \
+            -p 3002:3002 \
+            -v eddata-data:/app/eddata-data \
+            -v eddata-backup:/app/eddata-backup \
+            ghcr.io/eddataapi/eddata-collector:${{ github.ref_name }}
+          ```
+          
+          ### Documentation
+          - [Installation Guide](https://github.com/EDDataAPI/eddata-collector#installation)
+          - [Configuration](https://github.com/EDDataAPI/eddata-collector#configuration)
+          - [API Documentation](https://github.com/EDDataAPI/eddata-collector#api)
+        draft: false
+        prerelease: ${{ contains(github.ref_name, '-') }}

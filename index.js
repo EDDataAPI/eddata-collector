@@ -22,24 +22,24 @@ for (const level of ['log', 'info', 'warn', 'error', 'debug']) {
   }
 }
 
-console.log(`Ardent Collector v${Package.version} starting`)
+console.log(`EDData Collector v${Package.version} starting`)
 console.log(_ts())
 
 // Initalise default value for env vars before other imports
 console.log('Configuring environment …')
 const {
   EDDN_SERVER,
-  ARDENT_BACKUP_LOG,
-  ARDENT_DATABASE_STATS,
-  ARDENT_COLLECTOR_LOCAL_PORT,
-  ARDENT_COLLECTOR_DEFAULT_CACHE_CONTROL,
-  ARDENT_TRADE_DB,
-  ARDENT_STATIONS_DB,
-  ARDENT_LOCATIONS_DB,
-  ARDENT_DATA_DIR,
-  ARDENT_CACHE_DIR,
-  ARDENT_BACKUP_DIR,
-  ARDENT_DOWNLOADS_DIR,
+  EDDATA_BACKUP_LOG,
+  EDDATA_DATABASE_STATS,
+  EDDATA_COLLECTOR_LOCAL_PORT,
+  EDDATA_COLLECTOR_DEFAULT_CACHE_CONTROL,
+  EDDATA_TRADE_DB,
+  EDDATA_STATIONS_DB,
+  EDDATA_LOCATIONS_DB,
+  EDDATA_DATA_DIR,
+  EDDATA_CACHE_DIR,
+  EDDATA_BACKUP_DIR,
+  EDDATA_DOWNLOADS_DIR,
   MAINTENANCE_DAY_OF_WEEK,
   MAINTENANCE_WINDOW_START_HOUR,
   MAINTENANCE_WINDOW_END_HOUR
@@ -62,7 +62,7 @@ const koaBodyParser = require('koa-bodyparser')
 
 console.log('Ensuring required directories exist …')
 // Create required directories inline
-const requiredDirectories = [ARDENT_DATA_DIR, ARDENT_CACHE_DIR, ARDENT_BACKUP_DIR, ARDENT_DOWNLOADS_DIR]
+const requiredDirectories = [EDDATA_DATA_DIR, EDDATA_CACHE_DIR, EDDATA_BACKUP_DIR, EDDATA_DOWNLOADS_DIR]
 for (const dir of requiredDirectories) {
   if (!fs.existsSync(dir)) {
     try {
@@ -157,14 +157,14 @@ function disableDatabaseCacheTrigger () {
 function databaseCacheTrigger () {
   const cmd = '/usr/bin/vmtouch'
   if (fs.existsSync(cmd)) {
-    exec(`${cmd} -t ${ARDENT_TRADE_DB}*`, (err, stdout, stderr) => {
-      if (err) console.error('Error on cach trigger for Trade DB:', err, stdout, stderr)
+    exec(`${cmd} -t ${EDDATA_TRADE_DB}*`, (err, stdout, stderr) => {
+      if (err) console.error('Error on cache trigger for Trade DB:', err, stdout, stderr)
     })
-    exec(`${cmd} -t ${ARDENT_STATIONS_DB}*`, (err, stdout, stderr) => {
-      if (err) console.error('Error on cach trigger for Station DB:', err, stdout, stderr)
+    exec(`${cmd} -t ${EDDATA_STATIONS_DB}*`, (err, stdout, stderr) => {
+      if (err) console.error('Error on cache trigger for Station DB:', err, stdout, stderr)
     })
-    exec(`${cmd} -t ${ARDENT_LOCATIONS_DB}*`, (err, stdout, stderr) => {
-      if (err) console.error('Error on cach trigger for Locations DB:', err, stdout, stderr)
+    exec(`${cmd} -t ${EDDATA_LOCATIONS_DB}*`, (err, stdout, stderr) => {
+      if (err) console.error('Error on cache trigger for Locations DB:', err, stdout, stderr)
     })
   }
 }
@@ -184,15 +184,27 @@ if (SAVE_PAYLOAD_EXAMPLES === true &&
 
   // Set default cache headers
   app.use((ctx, next) => {
-    ctx.set('Cache-Control', ARDENT_COLLECTOR_DEFAULT_CACHE_CONTROL)
-    ctx.set('Ardent-Collector-Version', `${Package.version}`)
+    ctx.set('Cache-Control', EDDATA_COLLECTOR_DEFAULT_CACHE_CONTROL)
+    ctx.set('EDData-Collector-Version', `${Package.version}`)
     return next()
   })
 
+  // API Routes
   router.get('/', (ctx) => { ctx.body = printStats() })
+  
+  // Health check endpoint for load balancers
+  router.get('/health', (ctx) => {
+    ctx.body = {
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      version: Package.version,
+      uptime: Math.round((performance.now() - startTime) / 1000)
+    }
+  })
+  
   app.use(router.routes())
 
-  app.listen(ARDENT_COLLECTOR_LOCAL_PORT)
+  app.listen(EDDATA_COLLECTOR_LOCAL_PORT)
   console.log('Web service online')
 
   console.log(`Connecting to EDDN ${EDDN_SERVER}…`)
@@ -204,7 +216,7 @@ if (SAVE_PAYLOAD_EXAMPLES === true &&
   await startupMaintenance()
 
   // If a backup log does not exist, create a new backup immediately
-  if (!fs.existsSync(ARDENT_BACKUP_LOG)) {
+  if (!fs.existsSync(EDDATA_BACKUP_LOG)) {
     console.log('No backup log found, creating backup now')
     enableDatabaseWriteLock()
 
@@ -407,7 +419,7 @@ process.on('SIGTERM', () => {
 })
 
 process.on('SIGINT', () => {
-  console.log('Ardent Collector received SIGINT signal')
+  console.log('EDData Collector received SIGINT signal')
   closeAllDatabaseConnections()
   process.exit(0)
 })
@@ -418,8 +430,8 @@ function printStats () {
   let stats = null
 
   try {
-    if (fs.existsSync(ARDENT_DATABASE_STATS)) {
-      stats = JSON.parse(fs.readFileSync(ARDENT_DATABASE_STATS))
+    if (fs.existsSync(EDDATA_DATABASE_STATS)) {
+      stats = JSON.parse(fs.readFileSync(EDDATA_DATABASE_STATS))
     }
   } catch (error) {
     console.log('Warning: Could not read database stats:', error.message)
@@ -430,7 +442,7 @@ function printStats () {
   const uptime = Math.round((performance.now() - startTime) / 1000)
 
   try {
-    return `Ardent Collector v${Package.version} Online\n` +
+    return `EDData Collector v${Package.version} Online\n` +
       '--------------------------\n' +
       ((stats)
         ? 'Locations:\n' +

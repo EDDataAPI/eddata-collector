@@ -1,44 +1,75 @@
 version: '3.8'
 
 services:
-  ardent-collector:
+  eddata-collector:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ghcr.io/edtoolbox/ardent-collector:latest
-    container_name: ardent-collector
+      target: production
+    image: ghcr.io/eddataapi/eddata-collector:latest
+    container_name: eddata-collector
     restart: unless-stopped
     ports:
-      - "3002:3002"
+      - "${EDDATA_COLLECTOR_PORT:-3002}:3002"
     volumes:
       # Persist data directories
-      - ardent-data:/app/ardent-data
-      - ardent-backup:/app/ardent-backup
-      - ardent-downloads:/app/ardent-downloads
+      - eddata-data:/app/eddata-data
+      - eddata-backup:/app/eddata-backup
+      - eddata-downloads:/app/eddata-downloads
       # Optional: mount config file
-      # - ./ardent.config:/app/ardent.config:ro
+      - ./eddata.config:/app/eddata.config:ro
+      # Log persistence
+      - eddata-logs:/app/logs
     environment:
       - NODE_ENV=production
-      - ARDENT_COLLECTOR_LOCAL_PORT=3002
-      # Add other environment variables as needed
-      # - EDDN_SERVER=tcp://eddn.edcd.io:9500
+      - EDDATA_COLLECTOR_LOCAL_PORT=3002
+      - EDDN_SERVER=${EDDN_SERVER:-tcp://eddn.edcd.io:9500}
+      - EDDATA_DOMAIN=${EDDATA_DOMAIN:-eddata.api.com}
+      - EDDATA_DOWNLOADS_BASE_URL=${EDDATA_DOWNLOADS_BASE_URL}
+      - EDDATA_DATA_DIR=/app/eddata-data
+      - EDDATA_CACHE_DIR=/app/eddata-data/cache
+      - EDDATA_BACKUP_DIR=/app/eddata-backup
+      - EDDATA_DOWNLOADS_DIR=/app/eddata-downloads
+      # Database settings
+      - EDDATA_SYSTEMS_DB=/app/eddata-data/systems.db
+      - EDDATA_LOCATIONS_DB=/app/eddata-data/locations.db
+      - EDDATA_STATIONS_DB=/app/eddata-data/stations.db
+      - EDDATA_TRADE_DB=/app/eddata-data/trade.db
+      # Maintenance settings
+      - MAINTENANCE_DAY_OF_WEEK=${MAINTENANCE_DAY_OF_WEEK:-0}
+      - MAINTENANCE_WINDOW_START_HOUR=${MAINTENANCE_WINDOW_START_HOUR:-2}
+      - MAINTENANCE_WINDOW_END_HOUR=${MAINTENANCE_WINDOW_END_HOUR:-6}
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3002', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3002/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
-      - ardent-network
+      - eddata-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.eddata-collector.rule=Host(`collector.eddata.api.com`)"
+      - "traefik.http.services.eddata-collector.loadbalancer.server.port=3002"
 
 volumes:
-  ardent-data:
+  eddata-data:
     driver: local
-  ardent-backup:
+  eddata-backup:
     driver: local
-  ardent-downloads:
+  eddata-downloads:
+    driver: local
+  eddata-logs:
     driver: local
 
 networks:
-  ardent-network:
+  eddata-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
