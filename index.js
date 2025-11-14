@@ -191,7 +191,7 @@ if (SAVE_PAYLOAD_EXAMPLES === true &&
 
   // API Routes
   router.get('/', (ctx) => { ctx.body = printStats() })
-  
+
   // Health check endpoint for load balancers
   router.get('/health', (ctx) => {
     ctx.body = {
@@ -201,7 +201,7 @@ if (SAVE_PAYLOAD_EXAMPLES === true &&
       uptime: Math.round((performance.now() - startTime) / 1000)
     }
   })
-  
+
   app.use(router.routes())
 
   app.listen(EDDATA_COLLECTOR_LOCAL_PORT)

@@ -15,7 +15,7 @@ const ENVIRONMENTS = {
   },
   staging: {
     compose: 'docker-compose.staging.yml',
-    env: '.env.staging'  
+    env: '.env.staging'
   },
   production: {
     compose: 'docker-compose.production.yml',
@@ -24,27 +24,27 @@ const ENVIRONMENTS = {
 }
 
 class DeploymentManager {
-  constructor() {
+  constructor () {
     this.environment = process.env.NODE_ENV || 'development'
     this.verbose = process.argv.includes('--verbose')
   }
 
-  log(message, level = 'info') {
+  log (message, level = 'info') {
     const timestamp = new Date().toISOString()
     const prefix = level === 'error' ? '❌' : level === 'warn' ? '⚠️' : '✅'
     console.log(`${prefix} [${timestamp}] ${message}`)
   }
 
-  exec(command, options = {}) {
+  exec (command, options = {}) {
     if (this.verbose) {
       this.log(`Executing: ${command}`)
     }
-    
+
     try {
-      const result = execSync(command, { 
+      const result = execSync(command, {
         encoding: 'utf8',
         stdio: this.verbose ? 'inherit' : 'pipe',
-        ...options 
+        ...options
       })
       return result
     } catch (error) {
@@ -54,9 +54,9 @@ class DeploymentManager {
     }
   }
 
-  checkPrerequisites() {
+  checkPrerequisites () {
     this.log('Checking prerequisites...')
-    
+
     // Docker prüfen
     try {
       this.exec('docker --version')
@@ -80,7 +80,7 @@ class DeploymentManager {
     }
   }
 
-  loadEnvironment() {
+  loadEnvironment () {
     const envConfig = ENVIRONMENTS[this.environment]
     if (fs.existsSync(envConfig.env)) {
       this.log(`Loading environment from ${envConfig.env}`)
@@ -98,33 +98,33 @@ class DeploymentManager {
     }
   }
 
-  build() {
+  build () {
     this.log('Building Docker images...')
     const composeFile = ENVIRONMENTS[this.environment].compose
     this.exec(`docker-compose -f ${composeFile} build --no-cache`)
     this.log('Build completed successfully')
   }
 
-  deploy() {
+  deploy () {
     this.log(`Deploying to ${this.environment} environment...`)
     const composeFile = ENVIRONMENTS[this.environment].compose
-    
+
     // Stop existing containers
     this.exec(`docker-compose -f ${composeFile} down`)
-    
+
     // Start new containers
     this.exec(`docker-compose -f ${composeFile} up -d`)
-    
+
     // Wait for health checks
     this.waitForHealthy()
-    
+
     this.log('Deployment completed successfully')
   }
 
-  waitForHealthy(maxWait = 120) {
+  waitForHealthy (maxWait = 120) {
     this.log('Waiting for services to become healthy...')
     const composeFile = ENVIRONMENTS[this.environment].compose
-    
+
     for (let i = 0; i < maxWait; i += 5) {
       try {
         const result = this.exec(`docker-compose -f ${composeFile} ps --services --filter "status=running"`)
@@ -135,38 +135,38 @@ class DeploymentManager {
       } catch {
         // Service not ready yet
       }
-      
+
       this.log(`Waiting... (${i + 5}/${maxWait}s)`)
       // Simple sleep without external dependencies
       this.exec('sleep 5')
     }
-    
+
     throw new Error('Services did not become healthy within timeout')
   }
 
-  rollback() {
+  rollback () {
     this.log('Rolling back deployment...')
     const composeFile = ENVIRONMENTS[this.environment].compose
-    
+
     // Restore previous version (simplified)
     this.exec(`docker-compose -f ${composeFile} down`)
     this.exec(`docker-compose -f ${composeFile} up -d --no-deps eddata-collector`)
-    
+
     this.log('Rollback completed')
   }
 
-  status() {
+  status () {
     const composeFile = ENVIRONMENTS[this.environment].compose
     this.log(`Status for ${this.environment} environment:`)
     this.exec(`docker-compose -f ${composeFile} ps`)
   }
 
-  logs() {
+  logs () {
     const composeFile = ENVIRONMENTS[this.environment].compose
     this.exec(`docker-compose -f ${composeFile} logs -f`)
   }
 
-  showHelp() {
+  showHelp () {
     console.log(`
 EDData Collector Deployment Manager
 
@@ -190,7 +190,7 @@ Environment: ${this.environment}
 }
 
 // Main execution
-async function main() {
+async function main () {
   const command = process.argv[2] || 'help'
   const manager = new DeploymentManager()
 
@@ -207,26 +207,26 @@ async function main() {
         manager.loadEnvironment()
         manager.build()
         break
-        
+
       case 'deploy':
         manager.checkPrerequisites()
         manager.loadEnvironment()
         manager.build()
         manager.deploy()
         break
-        
+
       case 'status':
         manager.status()
         break
-        
+
       case 'logs':
         manager.logs()
         break
-        
+
       case 'rollback':
         manager.rollback()
         break
-        
+
       default:
         manager.showHelp()
         break
