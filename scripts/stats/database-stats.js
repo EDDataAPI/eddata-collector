@@ -47,5 +47,4 @@ const { systemsDb, locationsDb, stationsDb, tradeDb } = require('../../lib/db')
   if (!fs.existsSync(EDDATA_CACHE_DIR)) { fs.mkdirSync(EDDATA_CACHE_DIR, { recursive: true }) }
   fs.writeFileSync(EDDATA_DATABASE_STATS, JSON.stringify(stats, null, 2))
   console.timeEnd('Update database stats')
-  process.exit()
 })()

@@ -21,6 +21,4 @@ const {
   console.time('Update Colonia Systems commodity data')
   await updateCommodityReport('colonia-systems-1000', 'Colonia', 500, 1000)
   console.timeEnd('Update Colonia Systems commodity data')
-
-  process.exit()
 })()
