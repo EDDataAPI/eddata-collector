@@ -2,7 +2,8 @@
 // const { getISOTimestamp } = require('../lib/utils/dates')
 const { execSync } = require('child_process')
 const fs = require('fs')
-const { EDDATA_STATIONS_DB, EDDATA_SYSTEMS_DB, EDDATA_TRADE_DB } = require('../lib/consts')
+const path = require('path')
+const { EDDATA_STATIONS_DB, EDDATA_SYSTEMS_DB, EDDATA_TRADE_DB, EDDATA_CACHE_DIR } = require('../lib/consts')
 
 // The purpose of this is to be a place for any logic that needs to run at
 // startup, before the service goes back online. It is not a script in the
@@ -35,7 +36,35 @@ module.exports = async () => {
       console.error('Failed to generate database statistics:', error.message)
     }
   } else {
-    console.log('No databases found, skipping stats generation')
+    console.log('No databases found, creating empty cache files...')
+    
+    // Ensure cache directory exists
+    if (!fs.existsSync(EDDATA_CACHE_DIR)) {
+      fs.mkdirSync(EDDATA_CACHE_DIR, { recursive: true })
+    }
+    
+    // Create empty cache files to prevent API errors
+    const emptyCacheFiles = [
+      { name: 'commodities.json', data: { commodities: [], timestamp: new Date().toISOString() } },
+      { name: 'database-stats.json', data: { systems: { total: 0 }, locations: { total: 0, stations: 0, carriers: 0 }, trade: { markets: 0, orders: 0, uniqueCommodities: 0 }, timestamp: new Date().toISOString() } },
+      { name: 'commodity-ticker.json', data: { ticker: [], timestamp: new Date().toISOString() } },
+      { name: 'galnet-news.json', data: { articles: [], timestamp: new Date().toISOString() } }
+    ]
+    
+    for (const file of emptyCacheFiles) {
+      const filePath = path.join(EDDATA_CACHE_DIR, file.name)
+      if (!fs.existsSync(filePath)) {
+        fs.writeFileSync(filePath, JSON.stringify(file.data, null, 2))
+        console.log(`Created empty cache file: ${file.name}`)
+      }
+    }
+    
+    // Run galnet-news to fetch real data (doesn't require database)
+    try {
+      execSync('npm run stats:galnet', { stdio: 'inherit' })
+    } catch (error) {
+      console.error('Failed to fetch GalNet news:', error.message)
+    }
   }
 
   console.timeEnd('Startup maintenance')
