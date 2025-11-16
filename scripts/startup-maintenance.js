@@ -1,4 +1,5 @@
-// const { systemsDb, locationsDb, stationsDb, tradeDb } = require('../lib/db')
+// Initialize databases to ensure tables and migrations are run before stats generation
+const { systemsDb, locationsDb, stationsDb, tradeDb } = require('../lib/db') // eslint-disable-line no-unused-vars
 // const { getISOTimestamp } = require('../lib/utils/dates')
 const { execSync } = require('child_process')
 const fs = require('fs')
