@@ -35,6 +35,9 @@ module.exports = async () => {
       console.log('Database statistics and cache generated successfully')
     } catch (error) {
       console.error('Failed to generate database statistics:', error.message)
+      console.error('Full error:', error)
+      if (error.stderr) console.error('STDERR:', error.stderr.toString())
+      if (error.stdout) console.error('STDOUT:', error.stdout.toString())
     }
   } else {
     console.log('No databases found, creating empty cache files...')
