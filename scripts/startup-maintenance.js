@@ -37,12 +37,12 @@ module.exports = async () => {
     }
   } else {
     console.log('No databases found, creating empty cache files...')
-    
+
     // Ensure cache directory exists
     if (!fs.existsSync(EDDATA_CACHE_DIR)) {
       fs.mkdirSync(EDDATA_CACHE_DIR, { recursive: true })
     }
-    
+
     // Create empty cache files to prevent API errors
     const emptyCacheFiles = [
       { name: 'commodities.json', data: { commodities: [], timestamp: new Date().toISOString() } },
@@ -50,7 +50,7 @@ module.exports = async () => {
       { name: 'commodity-ticker.json', data: { ticker: [], timestamp: new Date().toISOString() } },
       { name: 'galnet-news.json', data: { articles: [], timestamp: new Date().toISOString() } }
     ]
-    
+
     for (const file of emptyCacheFiles) {
       const filePath = path.join(EDDATA_CACHE_DIR, file.name)
       if (!fs.existsSync(filePath)) {
@@ -58,7 +58,7 @@ module.exports = async () => {
         console.log(`Created empty cache file: ${file.name}`)
       }
     }
-    
+
     // Run galnet-news to fetch real data (doesn't require database)
     try {
       execSync('npm run stats:galnet', { stdio: 'inherit' })

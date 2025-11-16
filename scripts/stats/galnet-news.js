@@ -85,7 +85,7 @@ function transformGalNetNews (apiResponse) {
     console.timeEnd('Fetch GalNet news')
   } catch (error) {
     console.error('Failed to fetch GalNet news:', error.message)
-    
+
     // Create empty fallback file to prevent API 404 errors
     const fallback = {
       articles: [],
@@ -93,14 +93,14 @@ function transformGalNetNews (apiResponse) {
       error: error.message,
       source: 'fallback'
     }
-    
+
     if (!fs.existsSync(EDDATA_CACHE_DIR)) {
       fs.mkdirSync(EDDATA_CACHE_DIR, { recursive: true })
     }
-    
+
     const outputPath = path.join(EDDATA_CACHE_DIR, 'galnet-news.json')
     fs.writeFileSync(outputPath, JSON.stringify(fallback, null, 2))
-    
+
     console.log('✓ Created empty galnet-news.json fallback')
     console.timeEnd('Fetch GalNet news')
   }
