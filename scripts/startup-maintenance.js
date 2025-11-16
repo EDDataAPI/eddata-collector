@@ -23,6 +23,30 @@ module.exports = async () => {
 
   console.log('Performing maintenance tasks...')
 
+  // Check database integrity before proceeding
+  console.log('Checking database integrity...')
+  const databases = [
+    { name: 'systems.db', db: systemsDb, path: EDDATA_SYSTEMS_DB },
+    { name: 'stations.db', db: stationsDb, path: EDDATA_STATIONS_DB },
+    { name: 'trade.db', db: tradeDb, path: EDDATA_TRADE_DB }
+  ]
+
+  for (const { name, db, path: dbPath } of databases) {
+    if (fs.existsSync(dbPath)) {
+      try {
+        const result = db.prepare('PRAGMA integrity_check').get()
+        if (result.integrity_check !== 'ok') {
+          console.error(`❌ Database ${name} is CORRUPTED: ${result.integrity_check}`)
+          console.error('   Consider restoring from backup or rebuilding database')
+        } else {
+          console.log(`✓ Database ${name} integrity OK`)
+        }
+      } catch (error) {
+        console.error(`❌ Failed to check ${name} integrity:`, error.message)
+      }
+    }
+  }
+
   // Generate database statistics and cache on every startup if databases exist
   const hasDatabases = fs.existsSync(EDDATA_STATIONS_DB) ||
                        fs.existsSync(EDDATA_SYSTEMS_DB) ||
