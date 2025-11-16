@@ -316,7 +316,7 @@ if (SAVE_PAYLOAD_EXAMPLES === true &&
   // perform more frequent stats runs against those databases to avoid
   // impacting production performance.
   cron.schedule('0 0 6 * * *', () => {
-    exec('npm run stats:database', (error, stdout, stderr) => {
+    exec('npm run stats', (error, stdout, stderr) => {
       if (error) console.error(error)
     })
   })
