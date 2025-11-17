@@ -468,6 +468,7 @@ function printStats () {
       `* Messages Processed: ${messageCount}\n` +
       `* Node.js: ${process.version}`
   } catch (e) {
-    return 'Error: Could not load stats'
+    console.error('Error rendering stats:', e.message, e.stack)
+    return `Error: Could not load stats - ${e.message}`
   }
 }
