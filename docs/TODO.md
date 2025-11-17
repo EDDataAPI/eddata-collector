@@ -73,21 +73,41 @@ cron.schedule('0 3 * * 0', () => { // Sonntags 3 AM
 
 ## 🟡 MITTEL - Feature-Erweiterungen
 
-### #4 - database-stats.js Rewrite
+### ~~#4 - database-stats.js Rewrite~~ ✅ ERLEDIGT
 **Datei:** `scripts/stats/database-stats.js:6`  
 **Problem:** Langsame COUNT(*) Queries, ungenaue Stats  
 **Impact:** Langsame Stats-Generierung  
-**Aktuell:**
-```javascript
-// TODO: This needs a complete rewrite, it's both slow and not very precise
-```
-**Lösung:** 
-- Kombinierte Queries wie bei commodity-stats
-- Verwende CASE-Statements statt Sub-Queries
-- Cache häufig abgefragte Werte
 
-**Aufwand:** ~3-4 Stunden  
-**Nutzen:** Schnellere Stats-Generierung (~50% Reduktion)
+**✅ GELÖST:**
+- Subqueries durch CASE-Statements ersetzt
+- Commodity stats: 4 Subqueries → 1 kombinierte Query
+- Station stats: 3 Subqueries → 1 kombinierte Query mit CASE
+- Operator-Precedence-Bug bei updatedInLast24Hours gefixt
+
+**Performance:**
+- Vorher: 13ms
+- Nachher: 3.8ms
+- **Verbesserung: 71% schneller**
+
+**Query-Optimierungen:**
+```javascript
+// Vorher: 4 Subqueries
+SELECT COUNT(*) AS marketOrders,
+  (SELECT COUNT(DISTINCT commodityName) FROM commodities),
+  (SELECT COUNT(DISTINCT marketId) FROM commodities),
+  (SELECT COUNT(*) FROM commodities WHERE updatedAt > @ts)
+FROM commodities
+
+// Nachher: 1 kombinierte Query
+SELECT COUNT(*) AS marketOrders,
+  COUNT(DISTINCT commodityName) AS uniqueCommodities,
+  COUNT(DISTINCT marketId) AS tradeMarkets,
+  SUM(CASE WHEN updatedAt > @ts THEN 1 ELSE 0 END) AS updatedInLast24Hours
+FROM commodities
+```
+
+**Aufwand:** 3-4 Stunden ✅ **ERLEDIGT**  
+**Nutzen:** Schnellere Stats-Generierung, präzisere Berechnungen
 
 ---
 

@@ -24,28 +24,38 @@ const { createSnapshots, areSnapshotsFresh, getSnapshotPaths } = require('./snap
   const locationsDb = new SqliteDatabase(paths.locationsDb, { readonly: true })
   const stationsDb = new SqliteDatabase(paths.stationsDb, { readonly: true })
   const tradeDb = new SqliteDatabase(paths.tradeDb, { readonly: true })
+
+  // Optimized: Single combined query instead of 4 sub-queries for commodity stats
   const commodityStats = tradeDb.prepare(`
     SELECT
       COUNT(*) AS marketOrders,
-      (SELECT COUNT(DISTINCT(commodityName)) as count FROM commodities) AS uniqueCommodities,
-      (SELECT COUNT(DISTINCT(marketId)) as count FROM commodities) AS tradeMarkets,
-      (SELECT COUNT(*) FROM commodities WHERE updatedAt > @last24HoursTimestamp) as updatedInLast24Hours
+      COUNT(DISTINCT commodityName) AS uniqueCommodities,
+      COUNT(DISTINCT marketId) AS tradeMarkets,
+      SUM(CASE WHEN updatedAt > @last24HoursTimestamp THEN 1 ELSE 0 END) AS updatedInLast24Hours
     FROM commodities
-    `).get({
-    last24HoursTimestamp: getISOTimestamp(-1)
-  })
-  const stationStats = stationsDb.prepare(`
-  SELECT
-    (SELECT COUNT(*) FROM stations WHERE stationType != 'FleetCarrier') as stations,
-    (SELECT COUNT(*) FROM stations WHERE stationType = 'FleetCarrier') as fleetCarriers,
-    (SELECT COUNT(*) FROM stations WHERE updatedAt > @last24HoursTimestamp) as updatedInLast24Hours
-  FROM stations
   `).get({
     last24HoursTimestamp: getISOTimestamp(-1)
   })
+
+  // Optimized: Single combined query with CASE statements instead of 3 sub-queries
+  const stationStats = stationsDb.prepare(`
+    SELECT
+      SUM(CASE WHEN stationType != 'FleetCarrier' THEN 1 ELSE 0 END) AS stations,
+      SUM(CASE WHEN stationType = 'FleetCarrier' THEN 1 ELSE 0 END) AS fleetCarriers,
+      SUM(CASE WHEN updatedAt > @last24HoursTimestamp THEN 1 ELSE 0 END) AS updatedInLast24Hours
+    FROM stations
+  `).get({
+    last24HoursTimestamp: getISOTimestamp(-1)
+  })
+
+  // Simple COUNT queries for single-value stats
+  const systemCount = systemsDb.prepare('SELECT COUNT(*) as count FROM systems').get().count
+  const locationCount = locationsDb.prepare('SELECT COUNT(*) as count FROM locations').get().count
+
+  // Build stats object with null-safe fallbacks
   const stats = {
-    systems: systemsDb.prepare('SELECT COUNT(*) as count FROM systems').get().count,
-    pointsOfInterest: locationsDb.prepare('SELECT COUNT(*) as count FROM locations').get().count,
+    systems: systemCount || 0,
+    pointsOfInterest: locationCount || 0,
     stations: {
       stations: stationStats?.stations ?? 0,
       carriers: stationStats?.fleetCarriers ?? 0,
@@ -57,7 +67,7 @@ const { createSnapshots, areSnapshotsFresh, getSnapshotPaths } = require('./snap
       updatedInLast24Hours: commodityStats?.updatedInLast24Hours ?? 0,
       uniqueCommodities: commodityStats?.uniqueCommodities ?? 0
     },
-    updatedInLast24Hours: commodityStats?.updatedInLast24Hours ?? 0 + stationStats?.updatedInLast24Hours ?? 0,
+    updatedInLast24Hours: (commodityStats?.updatedInLast24Hours ?? 0) + (stationStats?.updatedInLast24Hours ?? 0),
     timestamp: new Date().toISOString()
   }
   if (!fs.existsSync(EDDATA_CACHE_DIR)) { fs.mkdirSync(EDDATA_CACHE_DIR, { recursive: true }) }
