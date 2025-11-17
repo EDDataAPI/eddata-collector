@@ -41,7 +41,26 @@ const { EDDATA_CACHE_DIR } = require('../../lib/consts')
 
   // Find top trading opportunities by profit margin
   // Uses snapshot data to find best current buy/sell opportunities
+  // Optimized: Uses subqueries to pre-filter before JOIN to avoid massive cartesian product
   const hotTrades = tradeDb.prepare(`
+    WITH BuyOpportunities AS (
+      SELECT commodityName, marketId, buyPrice, stock, updatedAt
+      FROM commodities
+      WHERE stock > 100
+        AND buyPrice > 0
+        AND buyPrice < 999999
+      ORDER BY buyPrice ASC
+      LIMIT 1000
+    ),
+    SellOpportunities AS (
+      SELECT commodityName, marketId, sellPrice, demand, updatedAt
+      FROM commodities
+      WHERE demand > 100
+        AND sellPrice > 0
+        AND sellPrice < 999999
+      ORDER BY sellPrice DESC
+      LIMIT 1000
+    )
     SELECT 
       buy.commodityName,
       buy.marketId as buyMarketId,
@@ -51,18 +70,10 @@ const { EDDATA_CACHE_DIR } = require('../../lib/consts')
       sell.sellPrice,
       sell.demand,
       (sell.sellPrice - buy.buyPrice) as profit,
-      CAST(((sell.sellPrice - buy.buyPrice) * 100.0 / buy.buyPrice) as INT) as profitPercent,
-      buy.updatedAt as buyUpdatedAt,
-      sell.updatedAt as sellUpdatedAt
-    FROM commodities buy
-    JOIN commodities sell ON buy.commodityName = sell.commodityName
-    WHERE buy.stock > 100
-      AND buy.buyPrice > 0
-      AND buy.buyPrice < 999999
-      AND sell.demand > 100
-      AND sell.sellPrice > 0
-      AND sell.sellPrice < 999999
-      AND sell.sellPrice > buy.buyPrice
+      CAST(((sell.sellPrice - buy.buyPrice) * 100.0 / buy.buyPrice) as INT) as profitPercent
+    FROM BuyOpportunities buy
+    JOIN SellOpportunities sell ON buy.commodityName = sell.commodityName
+    WHERE sell.sellPrice > buy.buyPrice
       AND buy.marketId != sell.marketId
     ORDER BY profit DESC
     LIMIT 20
