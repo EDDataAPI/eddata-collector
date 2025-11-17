@@ -34,14 +34,111 @@ const { EDDATA_CACHE_DIR } = require('../../lib/consts')
   await updateCommodityStats()
   console.timeEnd('Update stats for commodities')
 
-  // Generate commodity ticker (empty for now, can be populated with price changes later)
+  // Generate commodity ticker with hot trading opportunities
   console.log('Generating commodity ticker...')
+  console.time('Generate commodity ticker')
   const tickerPath = path.join(EDDATA_CACHE_DIR, 'commodity-ticker.json')
+
+  // Find top trading opportunities by profit margin
+  // Uses snapshot data to find best current buy/sell opportunities
+  const hotTrades = tradeDb.prepare(`
+    SELECT 
+      buy.commodityName,
+      buy.marketId as buyMarketId,
+      buy.buyPrice,
+      buy.stock,
+      sell.marketId as sellMarketId,
+      sell.sellPrice,
+      sell.demand,
+      (sell.sellPrice - buy.buyPrice) as profit,
+      CAST(((sell.sellPrice - buy.buyPrice) * 100.0 / buy.buyPrice) as INT) as profitPercent,
+      buy.updatedAt as buyUpdatedAt,
+      sell.updatedAt as sellUpdatedAt
+    FROM commodities buy
+    JOIN commodities sell ON buy.commodityName = sell.commodityName
+    WHERE buy.stock > 100
+      AND buy.buyPrice > 0
+      AND buy.buyPrice < 999999
+      AND sell.demand > 100
+      AND sell.sellPrice > 0
+      AND sell.sellPrice < 999999
+      AND sell.sellPrice > buy.buyPrice
+      AND buy.marketId != sell.marketId
+    ORDER BY profit DESC
+    LIMIT 20
+  `).all()
+
+  // Find commodities with highest current prices (luxury/rare items indicator)
+  const highValueCommodities = tradeDb.prepare(`
+    SELECT 
+      commodityName,
+      MAX(sellPrice) as maxPrice,
+      COUNT(DISTINCT marketId) as marketCount,
+      SUM(demand) as totalDemand
+    FROM commodities
+    WHERE sellPrice > 0 
+      AND sellPrice < 999999
+      AND demand > 0
+    GROUP BY commodityName
+    ORDER BY maxPrice DESC
+    LIMIT 10
+  `).all()
+
+  // Find commodities with most trading activity (updated recently)
+  const { getISOTimestamp } = require('../../lib/utils/dates')
+  const activeCommodities = tradeDb.prepare(`
+    SELECT 
+      commodityName,
+      COUNT(DISTINCT marketId) as activeMarkets,
+      SUM(stock) as totalStock,
+      SUM(demand) as totalDemand,
+      AVG(CASE WHEN buyPrice > 0 AND buyPrice < 999999 THEN buyPrice END) as avgBuyPrice,
+      AVG(CASE WHEN sellPrice > 0 AND sellPrice < 999999 THEN sellPrice END) as avgSellPrice
+    FROM commodities
+    WHERE updatedAt > @recentTimestamp
+    GROUP BY commodityName
+    HAVING activeMarkets > 5
+    ORDER BY activeMarkets DESC
+    LIMIT 10
+  `).all({
+    recentTimestamp: getISOTimestamp(-1) // Last 24 hours
+  })
+
   const ticker = {
-    ticker: [], // TODO: Add price change tracking
+    hotTrades: hotTrades.map(t => ({
+      commodity: t.commodityName,
+      profit: t.profit,
+      profitPercent: t.profitPercent,
+      buy: {
+        marketId: t.buyMarketId,
+        price: t.buyPrice,
+        stock: t.stock
+      },
+      sell: {
+        marketId: t.sellMarketId,
+        price: t.sellPrice,
+        demand: t.demand
+      }
+    })),
+    highValue: highValueCommodities.map(c => ({
+      commodity: c.commodityName,
+      maxPrice: c.maxPrice,
+      markets: c.marketCount,
+      demand: c.totalDemand
+    })),
+    mostActive: activeCommodities.map(c => ({
+      commodity: c.commodityName,
+      activeMarkets: c.activeMarkets,
+      avgBuyPrice: Math.round(c.avgBuyPrice || 0),
+      avgSellPrice: Math.round(c.avgSellPrice || 0),
+      totalStock: c.totalStock,
+      totalDemand: c.totalDemand
+    })),
     timestamp: new Date().toISOString()
   }
+
   fs.writeFileSync(tickerPath, JSON.stringify(ticker, null, 2))
+  console.timeEnd('Generate commodity ticker')
 
   // Fixed: The reports now join with the stations table for system positional data
   console.log('Updating Core Systems commodity data…')
