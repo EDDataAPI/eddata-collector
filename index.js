@@ -84,7 +84,7 @@ const discoveryScanEvent = require('./lib/event-handlers/discovery-scan-event')
 const navRouteEvent = require('./lib/event-handlers/navroute-event')
 const approachSettlementEvent = require('./lib/event-handlers/approach-settlement-event')
 const journalEvent = require('./lib/event-handlers/journal-event')
-const { closeAllDatabaseConnections } = require('./lib/db')
+const { closeAllDatabaseConnections, tradeDb } = require('./lib/db')
 
 // Simple Node.js 24 optimizations inline
 const startTime = performance.now()
@@ -321,6 +321,22 @@ if (SAVE_PAYLOAD_EXAMPLES === true &&
     })
   })
 
+  // Weekly VACUUM of trade database to reclaim disk space after deleting old data
+  cron.schedule('0 3 * * 0', () => { // Every Sunday at 3 AM
+    console.log('Starting weekly VACUUM of trade database...')
+    databaseWriteLocked = true
+    try {
+      console.time('VACUUM trade.db')
+      tradeDb.exec('VACUUM')
+      console.timeEnd('VACUUM trade.db')
+      console.log('Trade database VACUUM completed successfully')
+    } catch (error) {
+      console.error('Error during VACUUM:', error)
+    } finally {
+      databaseWriteLocked = false
+    }
+  })
+
   enableDatabaseCacheTrigger() // Enable cache trigger
 
   console.log(printStats())
@@ -329,82 +345,111 @@ if (SAVE_PAYLOAD_EXAMPLES === true &&
   // Enhanced message processing with Node.js 24 optimizations
   performanceMark('message-processing-start')
 
+  // Dead letter queue for buffering messages during DB locks
+  const messageBuffer = []
+  let processingBuffer = false
+
+  // Helper function to process a single message
+  function processMessageData (message) {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
+
+    zlib.inflate(message, (error, chunk) => {
+      clearTimeout(timeoutId)
+      if (error) return console.error(error)
+      if (controller.signal.aborted) return
+
+      const payload = JSON.parse(chunk.toString('utf8'))
+      const schema = payload?.$schemaRef ?? 'SCHEMA_UNDEFINED'
+
+      // Simple duplicate detection using Set
+      const cacheKey = `${schema}-${payload?.header?.gatewayTimestamp || payload?.header?.timestamp || Date.now()}`
+      if (messageCache.has(cacheKey)) {
+        return // Already processed recently
+      }
+
+      // Ignore messages that are not from the live version of the game
+      // i.e. At least version 4.0.0.0 -or- the version starts with 'CAPI-Live-'
+      // which indicates the data has come from the live API provided by FDev.
+      // This will mean we ignore some messages from software that is not
+      // behaving correctly but we can't trust data from old software anyway as
+      // it might be from someone running a legacy version of the game.
+      const gameMajorVersion = Number(payload?.header?.gameversion?.split('.')?.[0] ?? 0)
+      if (gameMajorVersion < 4 && !payload?.header?.gameversion?.startsWith('CAPI-Live-')) { return }
+
+      // Cache processed message to avoid duplicate processing
+      messageCache.add(cacheKey)
+
+      // Performance tracking
+      messageCount++
+      if (messageCount % 1000 === 0) {
+        const duration = getPerformanceDuration('message-processing-start')
+        console.log(`Processed ${messageCount} messages in ${Math.round(duration)}ms (avg: ${Math.round(duration / messageCount)}ms/msg)`)
+      }
+
+      // If we don't have an example message and SAVE_PAYLOAD_EXAMPLES is true, save it
+      if (SAVE_PAYLOAD_EXAMPLES) {
+        if (schema === 'https://eddn.edcd.io/schemas/journal/1') {
+          // Journal entries are a special case (they represent different game events and are raw events, not synthetic)
+          if (!fs.existsSync(`${PAYLOAD_EXAMPLES_DIR}/journal_1/${payload.message.event.toLowerCase()}.json`)) {
+            fs.writeFileSync(`${PAYLOAD_EXAMPLES_DIR}/journal_1/${payload.message.event.toLowerCase()}.json`, JSON.stringify(payload, null, 2))
+          }
+        } else {
+          const schemaFileName = schema.replace('https://eddn.edcd.io/schemas/', '').replaceAll('/', '_')
+          if (!fs.existsSync(`${PAYLOAD_EXAMPLES_DIR}/${schemaFileName}.json`)) { fs.writeFileSync(`${PAYLOAD_EXAMPLES_DIR}/${schemaFileName}.json`, JSON.stringify(payload, null, 2)) }
+        }
+      }
+      switch (schema) {
+        case 'https://eddn.edcd.io/schemas/commodity/3':
+          commodityEvent(payload)
+          break
+        case 'https://eddn.edcd.io/schemas/fssdiscoveryscan/1':
+          discoveryScanEvent(payload)
+          break
+        case 'https://eddn.edcd.io/schemas/navroute/1':
+          navRouteEvent(payload)
+          break
+        case 'https://eddn.edcd.io/schemas/approachsettlement/1':
+          approachSettlementEvent(payload)
+          break
+        case 'https://eddn.edcd.io/schemas/journal/1':
+          journalEvent(payload)
+          break
+      }
+    })
+  }
+
   ;(async () => {
     for await (const [message] of socket) {
       if (databaseWriteLocked === true) {
-        // TODO Buffer messages in a dead letter queue and process them later
+        // Buffer messages when DB is locked (e.g., during backup/stats)
+        messageBuffer.push(message)
+        if (messageBuffer.length % 100 === 0) {
+          console.log(`Buffered ${messageBuffer.length} messages during DB lock`)
+        }
         await new Promise(setImmediate)
         continue
       }
 
-      // Simple timeout handling with AbortController
+      // Process buffered messages first
+      if (messageBuffer.length > 0 && !processingBuffer) {
+        processingBuffer = true
+        console.log(`Processing ${messageBuffer.length} buffered messages...`)
+        for (const bufferedMessage of messageBuffer) {
+          try {
+            processMessageData(bufferedMessage)
+          } catch (error) {
+            console.error('Error processing buffered message:', error.message)
+          }
+        }
+        messageBuffer.length = 0 // Clear buffer
+        processingBuffer = false
+        console.log('Buffered messages processed')
+      }
+
+      // Process current message
       try {
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
-
-        zlib.inflate(message, (error, chunk) => {
-          clearTimeout(timeoutId)
-          if (error) return console.error(error)
-          if (controller.signal.aborted) return
-
-          const payload = JSON.parse(chunk.toString('utf8'))
-          const schema = payload?.$schemaRef ?? 'SCHEMA_UNDEFINED'
-
-          // Simple duplicate detection using Set
-          const cacheKey = `${schema}-${payload?.header?.gatewayTimestamp || payload?.header?.timestamp || Date.now()}`
-          if (messageCache.has(cacheKey)) {
-            return // Already processed recently
-          }
-
-          // Ignore messages that are not from the live version of the game
-          // i.e. At least version 4.0.0.0 -or- the version starts with 'CAPI-Live-'
-          // which indicates the data has come from the live API provided by FDev.
-          // This will mean we ignore some messages from software that is not
-          // behaving correctly but we can't trust data from old software anyway as
-          // it might be from someone running a legacy version of the game.
-          const gameMajorVersion = Number(payload?.header?.gameversion?.split('.')?.[0] ?? 0)
-          if (gameMajorVersion < 4 && !payload?.header?.gameversion?.startsWith('CAPI-Live-')) { return }
-
-          // Cache processed message to avoid duplicate processing
-          messageCache.add(cacheKey)
-
-          // Performance tracking
-          messageCount++
-          if (messageCount % 1000 === 0) {
-            const duration = getPerformanceDuration('message-processing-start')
-            console.log(`Processed ${messageCount} messages in ${Math.round(duration)}ms (avg: ${Math.round(duration / messageCount)}ms/msg)`)
-          }
-
-          // If we don't have an example message and SAVE_PAYLOAD_EXAMPLES is true, save it
-          if (SAVE_PAYLOAD_EXAMPLES) {
-            if (schema === 'https://eddn.edcd.io/schemas/journal/1') {
-              // Journal entries are a special case (they represent different game events and are raw events, not synthetic)
-              if (!fs.existsSync(`${PAYLOAD_EXAMPLES_DIR}/journal_1/${payload.message.event.toLowerCase()}.json`)) {
-                fs.writeFileSync(`${PAYLOAD_EXAMPLES_DIR}/journal_1/${payload.message.event.toLowerCase()}.json`, JSON.stringify(payload, null, 2))
-              }
-            } else {
-              const schemaFileName = schema.replace('https://eddn.edcd.io/schemas/', '').replaceAll('/', '_')
-              if (!fs.existsSync(`${PAYLOAD_EXAMPLES_DIR}/${schemaFileName}.json`)) { fs.writeFileSync(`${PAYLOAD_EXAMPLES_DIR}/${schemaFileName}.json`, JSON.stringify(payload, null, 2)) }
-            }
-          }
-          switch (schema) {
-            case 'https://eddn.edcd.io/schemas/commodity/3':
-              commodityEvent(payload)
-              break
-            case 'https://eddn.edcd.io/schemas/fssdiscoveryscan/1':
-              discoveryScanEvent(payload)
-              break
-            case 'https://eddn.edcd.io/schemas/navroute/1':
-              navRouteEvent(payload)
-              break
-            case 'https://eddn.edcd.io/schemas/approachsettlement/1':
-              approachSettlementEvent(payload)
-              break
-            case 'https://eddn.edcd.io/schemas/journal/1':
-              journalEvent(payload)
-              break
-          }
-        })
+        processMessageData(message)
       } catch (error) {
         console.error('Message processing error:', error.message)
       }
