@@ -498,10 +498,8 @@ function printStats () {
           `* Fleet Carriers: ${stats.stations.carriers.toLocaleString()}\n` +
           `* Station updates in last 24 hours: ${stats.stations.updatedInLast24Hours.toLocaleString()}\n` +
           'Trade:\n' +
-          `* Station markets: ${stats.trade.stations.toLocaleString()}\n` +
-          `* Fleet Carrier markets: ${stats.trade.carriers.toLocaleString()}\n` +
-          `* Trade systems: ${stats.trade.systems.toLocaleString()}\n` +
-          `* Trade orders: ${stats.trade.tradeOrders.toLocaleString()}\n` +
+          `* Markets: ${stats.trade.markets.toLocaleString()}\n` +
+          `* Trade orders: ${stats.trade.orders.toLocaleString()}\n` +
           `* Trade updates in last 24 hours: ${stats.trade.updatedInLast24Hours.toLocaleString()}\n` +
           `* Unique commodities: ${stats.trade.uniqueCommodities.toLocaleString()}\n` +
           `Stats last updated: ${stats.timestamp}\n`
