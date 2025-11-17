@@ -131,6 +131,9 @@ eddata-cache/
 *.db-wal
 *.db-shm
 
+# Database snapshots for stats generation
+data/.snapshots/
+
 # Docker
 docker-compose.override.yml
 .dockerignore

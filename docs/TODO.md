@@ -27,23 +27,25 @@ if (databaseWriteLocked) {
 
 ## 🟠 HOCH - Wichtige Performance-Verbesserungen
 
-### #2 - Stats-Generierung via sqlite3-rsync
+### ~~#2 - Stats-Generierung via sqlite3-rsync~~ ✅ ERLEDIGT
 **Datei:** `index.js:314-317`  
 **Problem:** Stats-Generierung blockiert Production-DB  
 **Impact:** Performance-Einbußen während 6 AM Cron  
-**Aktuell:**
-```javascript
-// TODO: Moving this to 6 AM temporarily. Intend to replace this with
-// an implementation that leverages sqlite3-rsync to do a local copy and
-// perform more frequent stats runs against those databases to avoid
-// impacting production performance.
-```
-**Lösung:** 
-- sqlite3-rsync für lokale DB-Kopie
-- Stats auf Kopie laufen lassen
-- Häufigere Updates möglich (z.B. stündlich)
 
-**Aufwand:** ~1 Tag  
+**✅ GELÖST:** 
+- Implementiert Database-Snapshot-System mit SQLite `VACUUM INTO`
+- Stats laufen nun gegen read-only Snapshots
+- Keine Blockierung der Production-DB mehr
+- Häufigere Updates möglich (stündlich statt täglich)
+- Snapshots werden automatisch alle 2h aktualisiert
+
+**Dateien:**
+- `scripts/stats/snapshot-databases.js` - Snapshot-Management
+- `scripts/stats/database-stats.js` - Nutzt Snapshots
+- `scripts/stats/commodity-stats.js` - Nutzt Snapshots
+- `lib/stats/commodity-stats.js` - Snapshot-Support
+
+**Aufwand:** 1 Tag ✅ **ERLEDIGT**  
 **Nutzen:** Keine Production-Impact, häufigere Stats-Updates
 
 ---

@@ -307,17 +307,17 @@ if (SAVE_PAYLOAD_EXAMPLES === true &&
 
   // Generate daily stats like total star systems, number of trade orders, etc.
   //
-  // FIXME: This has been refactored but is still a bit slow and could be better
-  // if the collector just logged stats as messags came in and periodically
-  // logged them to disk, in a JSON file or database.
-  //
-  // TODO Moving this to 6 AM temporarily. Intend to replace this with
-  // an implementation that leverages sqlite3-rsync to do a local copy and
-  // perform more frequent stats runs against those databases to avoid
-  // impacting production performance.
-  cron.schedule('0 0 6 * * *', () => {
+  // Stats generation using database snapshots - no production impact
+  // Snapshots are created once, then stats run against read-only copies
+  // Can run more frequently (hourly) without affecting live database performance
+  cron.schedule('0 * * * *', () => { // Every hour at :00
+    console.log('Running hourly stats generation (using snapshots)...')
     exec('npm run stats', (error, stdout, stderr) => {
-      if (error) console.error(error)
+      if (error) {
+        console.error('Stats generation failed:', error.message)
+      } else {
+        console.log('Stats generation completed successfully')
+      }
     })
   })
 

@@ -1,13 +1,29 @@
 const fs = require('fs')
+const SqliteDatabase = require('better-sqlite3')
 const { EDDATA_CACHE_DIR, EDDATA_DATABASE_STATS } = require('../../lib/consts')
 const { getISOTimestamp } = require('../../lib/utils/dates')
-const { systemsDb, locationsDb, stationsDb, tradeDb } = require('../../lib/db')
+const { createSnapshots, areSnapshotsFresh, getSnapshotPaths } = require('./snapshot-databases')
 
-// TODO This needs a complete rewrite, it's both slow and not very precise
-// Any changes should be synced with the front end
+// Stats generation now uses database snapshots to avoid blocking production
+// Snapshots are created hourly and provide consistent, fast stats queries
 ;(async () => {
   console.log('Updating database stats…')
   console.time('Update database stats')
+
+  // Create snapshots if they don't exist or are stale
+  if (!areSnapshotsFresh()) {
+    console.log('Refreshing database snapshots...')
+    createSnapshots()
+  } else {
+    console.log('Using existing database snapshots (still fresh)')
+  }
+
+  // Connect to snapshot databases (read-only, no WAL mode needed)
+  const paths = getSnapshotPaths()
+  const systemsDb = new SqliteDatabase(paths.systemsDb, { readonly: true })
+  const locationsDb = new SqliteDatabase(paths.locationsDb, { readonly: true })
+  const stationsDb = new SqliteDatabase(paths.stationsDb, { readonly: true })
+  const tradeDb = new SqliteDatabase(paths.tradeDb, { readonly: true })
   const commodityStats = tradeDb.prepare(`
     SELECT
       COUNT(*) AS marketOrders,
@@ -47,4 +63,10 @@ const { systemsDb, locationsDb, stationsDb, tradeDb } = require('../../lib/db')
   if (!fs.existsSync(EDDATA_CACHE_DIR)) { fs.mkdirSync(EDDATA_CACHE_DIR, { recursive: true }) }
   fs.writeFileSync(EDDATA_DATABASE_STATS, JSON.stringify(stats, null, 2))
   console.timeEnd('Update database stats')
+
+  // Close snapshot connections
+  systemsDb.close()
+  locationsDb.close()
+  stationsDb.close()
+  tradeDb.close()
 })()
