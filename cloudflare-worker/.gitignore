@@ -1,0 +1,9 @@
+# Cloudflare Worker (Optional)
+
+This directory contains optional Cloudflare Worker code for edge caching.
+
+**Status:** Not required for operation. Can be deployed later if needed.
+
+## Quick Start
+
+See `README.md` for full setup instructions.

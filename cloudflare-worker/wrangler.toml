@@ -1,0 +1,22 @@
+name = "eddata-api-gateway"
+main = "worker.js"
+compatibility_date = "2025-11-17"
+
+# Environment variables
+[vars]
+ORIGIN_URL = "https://your-container-domain.com"
+
+# Optional: Add custom routes when connected to a Cloudflare zone
+# Uncomment and modify for your domain
+# routes = [
+#   { pattern = "api.yourdomain.com/*", zone_name = "yourdomain.com" }
+# ]
+
+# Worker limits (free tier)
+[limits]
+cpu_ms = 50
+
+# Optional: KV namespace for advanced caching
+# [kv_namespaces]
+# binding = "CACHE"
+# id = "your-kv-namespace-id"
