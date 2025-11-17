@@ -11,7 +11,7 @@ const { EDDATA_CACHE_DIR } = require('../../lib/consts')
 
   // Fixed: The commodity stats now exclude Fleet Carrier data and use proper joins
   console.time('Update stats for commodities')
-  const commodities = await updateCommodityStats()
+  await updateCommodityStats()
   console.timeEnd('Update stats for commodities')
 
   // Generate commodity ticker (empty for now, can be populated with price changes later)
