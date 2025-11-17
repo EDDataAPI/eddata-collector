@@ -176,22 +176,42 @@ Implementiert umfassendes Commodity-Ticker-System mit 3 Kategorien:
 
 ## 🟢 NIEDRIG - Wartung & Cleanup
 
-### #6 - Station Schema-Erweiterung
+### ~~#6 - Station Schema-Erweiterung~~ ✅ ERLEDIGT
 **Datei:** `lib/db/stations-db.js:24-25`  
 **Problem:** Fehlende Station-Properties  
 **Impact:** Unvollständige Daten  
-**Aktuell:**
-```javascript
-// TODO: Add 'prohibited' (text, array of prohibited goods)
-// TODO: Add 'carrierDockingAccess'
+
+**✅ GELÖST:**
+Zwei neue Spalten zum Station-Schema hinzugefügt:
+
+**1. prohibited (TEXT)**
+- JSON-Array verbotener Commodities
+- Aus EDDN Commodity Events extrahiert
+- Beispiel: `["OnionHeadC", "Slaves"]`
+- NULL wenn keine Verbote vorhanden
+
+**2. carrierDockingAccess (TEXT)**
+- Fleet Carrier Docking-Zugangslevel
+- Werte: `'all'`, `'squadronFriends'`, `'none'`
+- Aus Docked/CarrierJump Events (falls verfügbar)
+- NULL wenn nicht Fleet Carrier oder nicht verfügbar
+
+**Implementierung:**
+- Schema-Migration in `migrateSchema()` automatisch
+- Handling in `commodity-event.js` für prohibited
+- Handling in `docked-event.js` für beide Felder
+- Automatisches JSON.stringify() für Arrays
+
+**Migration getestet:**
 ```
-**Lösung:**
-```javascript
-prohibited TEXT,           // JSON array of prohibited commodities
-carrierDockingAccess TEXT  // 'all', 'squadronFriends', 'none'
+[stations.db] Found 2 missing column(s), applying migrations...
+[stations.db] Adding column: prohibited
+[stations.db] Adding column: carrierDockingAccess
+[stations.db] Schema migration completed successfully
 ```
-**Aufwand:** ~2 Stunden  
-**Nutzen:** Vollständigere Station-Daten
+
+**Aufwand:** ~2 Stunden ✅ **ERLEDIGT**  
+**Nutzen:** Vollständigere Station-Daten, besseres Fleet Carrier Tracking
 
 ---
 
