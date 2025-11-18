@@ -1,4 +1,4 @@
-# Database Schema Changes - API/WWW Migration Guide
+ Database Schema Changes - API/WWW Migration Guide
 
 **Date:** November 17, 2025  
 **Version:** After TODO #6 (Station Schema Extension)
