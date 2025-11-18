@@ -1,4 +1,4 @@
-const { systemsDb, tradeDb } = require('../lib/db')
+const { systemsDb, tradeDb, stationsDb } = require('../lib/db')
 const { getISOTimestamp, timeBetweenTimestamps } = require('../lib/utils/dates')
 const { getNearbySystemSectors } = require('../lib/system-sectors')
 
@@ -93,26 +93,42 @@ const { getNearbySystemSectors } = require('../lib/system-sectors')
   testResults.totalKnownSystemsInGalaxy = getSystemsCount.get().count.toLocaleString()
   console.timeEnd('Count number of known systems in galaxy')
 
-  // TODO: Fix this test - commodities table doesn't have systemX/Y/Z columns
-  // Need to JOIN with stations/systems tables or restructure schema
-  /*
+  // Attach stations database to trade database for cross-database spatial queries
+  try {
+    tradeDb.exec(`ATTACH DATABASE '${stationsDb.name}' AS stationsDb`)
+  } catch (error) {
+    // Ignore if already attached (SQLITE_ERROR: database stationsDb is already in use)
+    if (!error.message.includes('already in use')) {
+      throw error
+    }
+  }
+
   console.time('Find a specific commodity on nearby markets')
   const findCommodityOnNearbyMarkets = tradeDb.prepare(`
-    SELECT *, sqrt(power(systemX-@x,2)+power(systemY-@y,2)+power(systemZ-@z,2)) AS distance FROM commodities
-    WHERE commodityName = @commodityName COLLATE NOCASE
-    AND systemX BETWEEN (@x-@distance) AND (@x+@distance)
-    AND systemY BETWEEN (@y-@distance) AND (@y+@distance)
-    AND systemZ BETWEEN (@z-@distance) AND (@z+@distance)
-    AND sqrt(power(systemX-@x,2)+power(systemY-@y,2)+power(systemZ-@z,2)) < @distance
-    ORDER BY distance
+    SELECT c.*, s.systemX, s.systemY, s.systemZ,
+      SQRT(POWER(s.systemX-@x,2)+POWER(s.systemY-@y,2)+POWER(s.systemZ-@z,2)) AS distance
+    FROM commodities c
+    JOIN stationsDb.stations s ON c.marketId = s.marketId
+    WHERE c.commodityName = @commodityName COLLATE NOCASE
+    AND s.systemX BETWEEN (@x-@distance) AND (@x+@distance)
+    AND s.systemY BETWEEN (@y-@distance) AND (@y+@distance)
+    AND s.systemZ BETWEEN (@z-@distance) AND (@z+@distance)
+    AND SQRT(POWER(s.systemX-@x,2)+POWER(s.systemY-@y,2)+POWER(s.systemZ-@z,2)) < @distance
+    ORDER BY distance ASC
+    LIMIT 10
   `)
   testResults.instancesOfSpecificCommodityOnNearbyMarkets = findCommodityOnNearbyMarkets.all({ ...query, commodityName: 'gold' }).length.toLocaleString()
   console.timeEnd('Find a specific commodity on nearby markets')
 
   console.time('Find a specific commodity in a specific system')
-  testResults.goldInSystem = await tradeDb.prepare('SELECT * FROM commodities WHERE systemName = @systemName COLLATE NOCASE AND commodityName = @commodityName COLLATE NOCASE').all({ ...query, commodityName: 'gold' })
+  testResults.goldInSystem = tradeDb.prepare(`
+    SELECT c.*
+    FROM commodities c
+    JOIN stationsDb.stations s ON c.marketId = s.marketId
+    WHERE s.systemName = @systemName COLLATE NOCASE 
+    AND c.commodityName = @commodityName COLLATE NOCASE
+  `).all({ ...query, commodityName: 'gold' })
   console.timeEnd('Find a specific commodity in a specific system')
-  */
 
   const nearbySectors = getNearbySystemSectors(query.x, query.y, query.z, query.distance)
   const findSystemsBySector = systemsDb.prepare(`

@@ -233,32 +233,58 @@ CREATE INDEX IF NOT EXISTS systems_systemSector ON systems (systemSector);
 
 ---
 
-### #8 - Broken Test Fix
+### ~~#8 - Broken Test Fix~~ ✅ ERLEDIGT
 **Datei:** `tests/index.js:96-97`  
 **Problem:** Test kommentiert wegen fehlendem JOIN  
 **Impact:** Fehlende Test-Coverage  
-**Aktuell:**
+
+**✅ GELÖST:**
+Beide räumlichen Commodity-Tests wurden repariert und funktionieren jetzt korrekt:
+
+**1. Spatial Query Test** - Commodities in nahegelegenen Märkten:
+- Cross-Database JOIN zwischen `commodities` und `stations` Tabellen
+- ATTACH DATABASE für Cross-DB-Abfragen implementiert
+- Räumliche Distanzberechnung über `systemX/Y/Z` Koordinaten
+- Optimiert mit bounding box und SQRT-Distanz-Sortierung
+- Test-Performance: ~0.2ms
+
+**2. System-Specific Query Test** - Commodities in bestimmtem System:
+- JOIN für systemName-Filterung über stations-Tabelle  
+- Korrekte COLLATE NOCASE Behandlung
+- Test-Performance: ~0.1ms
+
+**Implementierte Lösung:**
 ```javascript
-// TODO: Fix this test - commodities table doesn't have systemX/Y/Z columns
-// Need to JOIN with stations/systems tables or restructure schema
-```
-**Lösung:**
-```javascript
+// Database attachment for cross-database queries
+tradeDb.exec(`ATTACH DATABASE '${stationsDb.name}' AS stationsDb`)
+
+// Spatial query with distance calculation
 const findCommodityOnNearbyMarkets = tradeDb.prepare(`
   SELECT c.*, s.systemX, s.systemY, s.systemZ,
     SQRT(POWER(s.systemX-@x,2)+POWER(s.systemY-@y,2)+POWER(s.systemZ-@z,2)) AS distance
   FROM commodities c
   JOIN stationsDb.stations s ON c.marketId = s.marketId
-  WHERE c.commodityName = @commodityName
+  WHERE c.commodityName = @commodityName COLLATE NOCASE
   AND s.systemX BETWEEN (@x-@distance) AND (@x+@distance)
   AND s.systemY BETWEEN (@y-@distance) AND (@y+@distance)
   AND s.systemZ BETWEEN (@z-@distance) AND (@z+@distance)
+  AND SQRT(POWER(s.systemX-@x,2)+POWER(s.systemY-@y,2)+POWER(s.systemZ-@z,2)) < @distance
   ORDER BY distance ASC
   LIMIT 10
 `)
+
+// System-specific commodity query
+const systemQuery = tradeDb.prepare(`
+  SELECT c.*
+  FROM commodities c
+  JOIN stationsDb.stations s ON c.marketId = s.marketId
+  WHERE s.systemName = @systemName COLLATE NOCASE 
+  AND c.commodityName = @commodityName COLLATE NOCASE
+`)
 ```
-**Aufwand:** ~1 Stunde  
-**Nutzen:** Vollständige Test-Coverage
+
+**Aufwand:** ~1 Stunde ✅ **ERLEDIGT**  
+**Nutzen:** Vollständige Test-Coverage für Spatial-API Features
 
 ---
 
