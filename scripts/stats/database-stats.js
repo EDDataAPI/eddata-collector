@@ -10,9 +10,10 @@ const { createSnapshots, areSnapshotsFresh, getSnapshotPaths } = require('./snap
   console.log('Updating database stats…')
   console.time('Update database stats')
 
-  // Create snapshots if they don't exist or are stale
+  // Create or refresh database snapshots (only if stale)
+  // Changed: Don't force refresh every time to avoid DB locks
   if (!areSnapshotsFresh()) {
-    console.log('Refreshing database snapshots...')
+    console.log('Creating database snapshots for stats generation...')
     createSnapshots()
   } else {
     console.log('Using existing database snapshots (still fresh)')

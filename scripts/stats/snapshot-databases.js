@@ -11,7 +11,7 @@ const { systemsDb, locationsDb, stationsDb, tradeDb } = require('../../lib/db')
  */
 
 const SNAPSHOT_DIR = path.join(__dirname, '../../data/.snapshots')
-const SNAPSHOT_AGE_LIMIT = 2 * 60 * 60 * 1000 // 2 hours in milliseconds
+const SNAPSHOT_AGE_LIMIT = 6 * 60 * 60 * 1000 // 6 hours in milliseconds (reduced DB lock frequency)
 
 const databases = [
   { db: systemsDb, name: 'systems.db' },

@@ -305,13 +305,10 @@ if (SAVE_PAYLOAD_EXAMPLES === true &&
     })
   })
 
-  // Generate daily stats like total star systems, number of trade orders, etc.
-  //
-  // Stats generation using database snapshots - no production impact
-  // Snapshots are created once, then stats run against read-only copies
-  // Can run more frequently (hourly) without affecting live database performance
-  cron.schedule('0 * * * *', () => { // Every hour at :00
-    console.log('Running hourly stats generation (using snapshots)...')
+  // Generate stats 4x daily to minimize DB locks from snapshot creation
+  // Snapshots cache for 6h, so this alignment reduces VACUUM INTO conflicts
+  cron.schedule('0 */6 * * *', () => { // Every 6 hours: 00:00, 06:00, 12:00, 18:00
+    console.log('Running 6-hourly stats generation (using snapshots)...')
     exec('npm run stats', (error, stdout, stderr) => {
       if (error) {
         console.error('Stats generation failed:', error.message)
