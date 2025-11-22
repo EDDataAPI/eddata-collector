@@ -1,51 +1,39 @@
 # Setup Guide - Cache & API Integration
 
-## Problem
-Die API kann die Cache-Dateien vom Collector nicht finden.
+## Architektur
 
-## Lösung: Symlink erstellen
+Die Collector und API Services laufen in separaten Containern, greifen aber auf die gleichen Daten via Volume Mounts zu.
 
-Um die Cache-Dateien vom Collector für die API zugänglich zu machen, muss ein Symlink erstellt werden:
-
-### Windows (PowerShell Admin)
-```powershell
-cd "X:\Github Workspace\Elite Dangerous\EDData\eddata-api"
-New-Item -ItemType SymbolicLink -Path "eddata-data" -Target "X:\Github Workspace\Elite Dangerous\EDData\eddata-collector\eddata-data" -Force
-```
-
-### Linux/Mac
-```bash
-cd eddata-api
-ln -s ../eddata-collector/eddata-data eddata-data
-```
-
-## Verifikation
-```bash
-# Cache-Dateien sollten jetzt erreichbar sein
-ls eddata-api/eddata-data/cache/
-# Output sollte zeigen:
-# - galnet-news.json
-# - commodity-ticker.json
-# - database-stats.json
-# - commodities.json
-```
-
-## Wie es funktioniert
+## Datenfluss
 
 1. **Collector** generiert Daten:
-   - `eddata-collector/eddata-data/` enthält SQLite DBs und Cache-Dateien
-   - Cache wird von Cron-Jobs generiert (alle 6h)
+   - Läuft in eigenem Container
+   - Speichert in `/app/data/` (intern):
+     - SQLite Datenbanken: `*.db`, `*.db-shm`, `*.db-wal`
+     - Cache-Dateien: `cache/*.json`
+   - Generiert alle 6h neue Stats
 
 2. **API** liest Daten:
-   - Via Symlink: `eddata-api/eddata-data/` → `eddata-collector/eddata-data/`
-   - Endpoints verfügbar:
+   - Läuft in eigenem Container
+   - Mountet `/app/data/` readonly vom gleichen Volume
+   - Liest Cache-Dateien:
      - `/v2/news/galnet` - Galnet News (50 Artikel)
      - `/v2/news/commodities` - Hot Trades Top 20
      - `/v2/stats` - Datenbankstatistiken
 
-3. **Caching in .gitignore**:
-   - `eddata-api/.gitignore` enthält `eddata-data`
-   - Symlink wird nicht committed (absichtlich)
+3. **Volume Sharing** (Docker Compose):
+   ```yaml
+   volumes:
+     collector-data:
+   
+   services:
+     collector:
+       volumes:
+         - collector-data:/app/data
+     api:
+       volumes:
+         - collector-data:/app/data:ro  # readonly
+   ```
 
 ## Umgebungsvariablen
 
