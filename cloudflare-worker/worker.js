@@ -47,6 +47,7 @@ export default {
 
     try {
       // Check Cloudflare cache first
+      // eslint-disable-next-line no-undef
       const cache = caches.default
       let response = await cache.match(request)
 
