@@ -23,14 +23,21 @@ async function fetchGalNetNews () {
       })
 
       res.on('end', () => {
+        console.log('[DEBUG] API Response Status:', res.statusCode)
+        console.log('[DEBUG] API Response Length:', data.length, 'bytes')
+        
         if (res.statusCode === 200) {
           try {
             const json = JSON.parse(data)
+            console.log('[DEBUG] Successfully parsed JSON response')
             resolve(json)
           } catch (error) {
+            console.error('[DEBUG] JSON Parse Error:', error.message)
+            console.error('[DEBUG] Raw data:', data.substring(0, 500))
             reject(new Error('Failed to parse GalNet news JSON: ' + error.message))
           }
         } else {
+          console.error('[DEBUG] API returned non-200 status:', res.statusCode)
           reject(new Error(`GalNet API returned status ${res.statusCode}`))
         }
       })
@@ -42,10 +49,15 @@ async function fetchGalNetNews () {
 
 // Transform GalNet API response to simplified format
 function transformGalNetNews (apiResponse) {
+  console.log('[DEBUG] API Response type:', typeof apiResponse)
+  console.log('[DEBUG] API Response keys:', Object.keys(apiResponse || {}))
+  
   if (!apiResponse.data || !Array.isArray(apiResponse.data)) {
+    console.warn('[DEBUG] apiResponse.data is not an array or missing. Response:', JSON.stringify(apiResponse).substring(0, 200))
     return { articles: [], timestamp: new Date().toISOString() }
   }
 
+  console.log('[DEBUG] Found', apiResponse.data.length, 'articles in API response')
   const articles = apiResponse.data.map(article => ({
     id: article.id,
     title: article.attributes?.title || 'Untitled',
