@@ -89,22 +89,17 @@ function transformGalNetNews (apiResponse) {
       fs.mkdirSync(EDDATA_CACHE_DIR, { recursive: true })
     }
 
-    // Save to cache
+    // Save to cache - ONLY the articles array (not the wrapper object)
     const outputPath = path.join(EDDATA_CACHE_DIR, 'galnet-news.json')
-    fs.writeFileSync(outputPath, JSON.stringify(transformedNews, null, 2))
+    fs.writeFileSync(outputPath, JSON.stringify(transformedNews.articles, null, 2))
 
     console.log(`✓ Saved ${transformedNews.count} GalNet articles to galnet-news.json`)
     console.timeEnd('Fetch GalNet news')
   } catch (error) {
     console.error('Failed to fetch GalNet news:', error.message)
 
-    // Create empty fallback file to prevent API 404 errors
-    const fallback = {
-      articles: [],
-      timestamp: new Date().toISOString(),
-      error: error.message,
-      source: 'fallback'
-    }
+    // Create empty fallback array to prevent API 500 errors
+    const fallback = []
 
     if (!fs.existsSync(EDDATA_CACHE_DIR)) {
       fs.mkdirSync(EDDATA_CACHE_DIR, { recursive: true })
