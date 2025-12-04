@@ -89,6 +89,8 @@ const { closeAllDatabaseConnections, tradeDb } = require('./lib/db')
 // Simple Node.js 24 optimizations inline
 const startTime = performance.now()
 const messageCache = new Set() // Simple Set for duplicate detection
+const MESSAGE_CACHE_MAX_SIZE = 50000 // Max entries before cleanup
+const MESSAGE_CACHE_CLEANUP_SIZE = 25000 // Remove this many oldest entries on cleanup
 let messageCount = 0
 
 // Helper functions
@@ -376,6 +378,15 @@ if (SAVE_PAYLOAD_EXAMPLES === true &&
 
       // Cache processed message to avoid duplicate processing
       messageCache.add(cacheKey)
+
+      // Prevent memory leak: cleanup cache when it gets too large
+      if (messageCache.size > MESSAGE_CACHE_MAX_SIZE) {
+        const iterator = messageCache.values()
+        for (let i = 0; i < MESSAGE_CACHE_CLEANUP_SIZE; i++) {
+          messageCache.delete(iterator.next().value)
+        }
+        console.log(`Cache cleanup: reduced from ${MESSAGE_CACHE_MAX_SIZE} to ${messageCache.size} entries`)
+      }
 
       // Performance tracking
       messageCount++
