@@ -346,6 +346,7 @@ if (SAVE_PAYLOAD_EXAMPLES === true &&
 
   // Dead letter queue for buffering messages during DB locks
   const messageBuffer = []
+  const MESSAGE_BUFFER_MAX_SIZE = 10000 // Max messages to buffer during DB lock
   let processingBuffer = false
 
   // Helper function to process a single message
@@ -393,6 +394,11 @@ if (SAVE_PAYLOAD_EXAMPLES === true &&
       if (messageCount % 1000 === 0) {
         const duration = getPerformanceDuration('message-processing-start')
         console.log(`Processed ${messageCount} messages in ${Math.round(duration)}ms (avg: ${Math.round(duration / messageCount)}ms/msg)`)
+        
+        // Clear performance entries to prevent memory buildup
+        performance.clearMarks()
+        performance.clearMeasures()
+        performanceMark('message-processing-start') // Re-mark for next batch
       }
 
       // If we don't have an example message and SAVE_PAYLOAD_EXAMPLES is true, save it
@@ -431,7 +437,10 @@ if (SAVE_PAYLOAD_EXAMPLES === true &&
     for await (const [message] of socket) {
       if (databaseWriteLocked === true) {
         // Buffer messages when DB is locked (e.g., during backup/stats)
-        messageBuffer.push(message)
+        // But limit buffer size to prevent memory exhaustion
+        if (messageBuffer.length < MESSAGE_BUFFER_MAX_SIZE) {
+          messageBuffer.push(message)
+        }
         if (messageBuffer.length % 100 === 0) {
           console.log(`Buffered ${messageBuffer.length} messages during DB lock`)
         }
