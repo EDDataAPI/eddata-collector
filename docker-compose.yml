@@ -39,9 +39,9 @@ services:
       - MAINTENANCE_DAY_OF_WEEK=${MAINTENANCE_DAY_OF_WEEK:-0}
       - MAINTENANCE_WINDOW_START_HOUR=${MAINTENANCE_WINDOW_START_HOUR:-2}
       - MAINTENANCE_WINDOW_END_HOUR=${MAINTENANCE_WINDOW_END_HOUR:-6}
-      # Performance: Skip startup maintenance for faster restarts (default: false)
-      # Set to 'true' only if cache files exist and snapshots are managed via cron
-      - SKIP_STARTUP_MAINTENANCE=${SKIP_STARTUP_MAINTENANCE:-false}
+      # Performance: Skip startup maintenance for faster restarts (default: true)
+      # Snapshots and stats take 10-20 minutes with large DBs - better to run via cron
+      - SKIP_STARTUP_MAINTENANCE=${SKIP_STARTUP_MAINTENANCE:-true}
       # Performance: Skip slow regional commodity reports (Core Systems, Colonia)
       # These take 5-10 minutes and are rarely used - skip them to speed up stats by 80%
       - SKIP_REGIONAL_COMMODITY_REPORTS=${SKIP_REGIONAL_COMMODITY_REPORTS:-true}
