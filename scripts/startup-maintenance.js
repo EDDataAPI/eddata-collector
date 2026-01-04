@@ -4,7 +4,7 @@ const { systemsDb, locationsDb, stationsDb, tradeDb } = require('../lib/db') // 
 const { execSync } = require('child_process')
 const fs = require('fs')
 const path = require('path')
-const { EDDATA_STATIONS_DB, EDDATA_SYSTEMS_DB, EDDATA_TRADE_DB, EDDATA_CACHE_DIR, SKIP_STARTUP_MAINTENANCE } = require('../lib/consts')
+const { EDDATA_STATIONS_DB, EDDATA_SYSTEMS_DB, EDDATA_TRADE_DB, EDDATA_CACHE_DIR, SKIP_STARTUP_MAINTENANCE, SKIP_INTEGRITY_CHECKS } = require('../lib/consts')
 
 // The purpose of this is to be a place for any logic that needs to run at
 // startup, before the service goes back online. It is not a script in the
@@ -33,9 +33,7 @@ module.exports = async () => {
 
   // Check database integrity before proceeding
   // Performance: Can be skipped on production for faster startup (only needed after crashes)
-  const skipIntegrityChecks = process.env.SKIP_INTEGRITY_CHECKS === 'true'
-
-  if (skipIntegrityChecks) {
+  if (SKIP_INTEGRITY_CHECKS) {
     console.log('⚡ Skipping database integrity checks (SKIP_INTEGRITY_CHECKS=true)')
     console.log('   Integrity checks only needed after crashes or corruption')
   } else {
