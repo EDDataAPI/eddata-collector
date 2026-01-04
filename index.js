@@ -93,6 +93,10 @@ const MESSAGE_CACHE_MAX_SIZE = 50000 // Max entries before cleanup
 const MESSAGE_CACHE_CLEANUP_SIZE = 25000 // Remove this many oldest entries on cleanup
 let messageCount = 0
 
+// Maintenance status tracking
+let maintenanceRunning = false
+let maintenanceStartTime = null
+
 // Helper functions
 function performanceMark (name) {
   performance.mark(name)
@@ -196,12 +200,22 @@ if (SAVE_PAYLOAD_EXAMPLES === true &&
 
   // Health check endpoint for load balancers
   router.get('/health', (ctx) => {
-    ctx.body = {
+    const healthStatus = {
       status: 'healthy',
       timestamp: new Date().toISOString(),
       version: Package.version,
       uptime: Math.round((performance.now() - startTime) / 1000)
     }
+
+    // Add maintenance status if running
+    if (maintenanceRunning) {
+      healthStatus.maintenance = {
+        running: true,
+        duration: maintenanceStartTime ? Math.round((performance.now() - maintenanceStartTime) / 1000) : 0
+      }
+    }
+
+    ctx.body = healthStatus
   })
 
   app.use(router.routes())
@@ -218,9 +232,18 @@ if (SAVE_PAYLOAD_EXAMPLES === true &&
   // Run startup maintenance asynchronously in the background (non-blocking)
   // This allows the collector to start processing messages immediately
   console.log('Starting background maintenance tasks (non-blocking)...')
-  startupMaintenance().catch(err => {
-    console.error('Startup maintenance error:', err)
-  })
+  maintenanceRunning = true
+  maintenanceStartTime = performance.now()
+
+  startupMaintenance()
+    .then(() => {
+      maintenanceRunning = false
+      console.log('Background maintenance completed')
+    })
+    .catch(err => {
+      maintenanceRunning = false
+      console.error('Startup maintenance error:', err)
+    })
 
   // If a backup log does not exist, create a new backup immediately
   if (!fs.existsSync(EDDATA_BACKUP_LOG)) {

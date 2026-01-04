@@ -106,6 +106,37 @@ SKIP_STARTUP_MAINTENANCE=true  # Maximale Geschwindigkeit beim Testen
 [07:15:34] EDData Collector ready!
 ```
 
+Prüfe den Maintenance-Status via Health-Endpoint:
+
+```bash
+curl http://localhost:3002/health
+
+# Während Maintenance läuft:
+{
+  "status": "healthy",
+  "timestamp": "2026-01-04T18:55:31.000Z",
+  "version": "1.0.0",
+  "uptime": 45,
+  "maintenance": {
+    "running": true,
+    "duration": 139
+  }
+}
+
+# Nach Abschluss:
+{
+  "status": "healthy",
+  "timestamp": "2026-01-04T18:58:00.000Z",
+  "version": "1.0.0",
+  "uptime": 194
+}
+```
+
+**Health-Check Timing:**
+- Der Container ist sofort "healthy" sobald der Web-Service läuft
+- `start_period: 300s` (5 Minuten) gibt großen DBs Zeit für Integrity-Checks
+- Andere Container müssen nicht auf die Maintenance warten
+
 ## Weitere Optimierungen
 
 Für noch bessere Performance:

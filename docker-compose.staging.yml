@@ -37,7 +37,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 180s  # 3 minutes for database integrity checks
     logging:
       driver: "json-file"
       options:
