@@ -1,10 +1,14 @@
 name = "eddata-api-gateway"
 main = "worker.js"
-compatibility_date = "2025-11-17"
+compatibility_date = "2026-01-04"
 
 # Environment variables
 [vars]
 ORIGIN_URL = "https://your-container-domain.com"
+
+# Observability
+[observability]
+Enabled = true
 
 # Optional: Add custom routes when connected to a Cloudflare zone
 # Uncomment and modify for your domain

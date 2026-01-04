@@ -41,6 +41,23 @@ services:
       # Performance: Skip startup maintenance for faster restarts (default: false)
       # Set to 'true' only if cache files exist and snapshots are managed via cron
       - SKIP_STARTUP_MAINTENANCE=${SKIP_STARTUP_MAINTENANCE:-false}
+      # Performance: Skip slow regional commodity reports (Core Systems, Colonia)
+      # These take 5-10 minutes and are rarely used - skip them to speed up stats by 80%
+      - SKIP_REGIONAL_COMMODITY_REPORTS=${SKIP_REGIONAL_COMMODITY_REPORTS:-true}
+      # Performance optimizations
+      - NODE_OPTIONS=--max-old-space-size=4096
+      - UV_THREADPOOL_SIZE=16
+      # SQLite optimization: 1GB cache fits perfectly in 4GB container
+      # Memory distribution: 1.5GB Node.js + 1GB SQLite + 1GB OS Cache + 0.5GB overhead
+    # Resource limits for production deployment
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
     healthcheck:
       test: ["CMD", "node", "-e", "const http = require('http'); const options = { hostname: 'localhost', port: 3002, path: '/health', timeout: 5000 }; const req = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1)); req.on('timeout', () => process.exit(1)); req.end();"]
       interval: 30s

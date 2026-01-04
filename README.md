@@ -143,6 +143,8 @@ The EDData Collector can be configured via environment variables:
 
 > **⚡ Performance Tip:** For large databases (>10GB), startup can take 45+ minutes. Set `SKIP_STARTUP_MAINTENANCE=true` after initial setup to reduce startup time to ~5 seconds (540x faster!). See [docs/PERFORMANCE-OPTIMIZATIONS.md](docs/PERFORMANCE-OPTIMIZATIONS.md) for details.
 
+> **🗄️ Database:** Uses SQLite optimized for read-heavy workloads. Handles TB-sized databases with <1ms latency. See [docs/SQLITE-OPTIMIZATION.md](docs/SQLITE-OPTIMIZATION.md) for performance tuning. MongoDB is NOT recommended - SQLite is 10-100x faster for this use case!
+
 ### 📄 Configuration File
 
 Create an `eddata.config` file for advanced configuration:

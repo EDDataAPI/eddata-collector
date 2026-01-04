@@ -9,20 +9,32 @@ The worker acts as an intelligent caching proxy:
 - Reduces load on your origin server by 80-95%
 - Provides DDoS protection automatically
 - Adds CORS headers for browser requests
+- **Compression support** (gzip, brotli) for faster transfers
+- **Health check passthrough** without caching
+- **Resilient caching** with stale-while-revalidate and stale-if-error
+- **30-second timeout** protection for origin requests
 - Free tier: 100,000 requests/day
 
 ## 📊 Cache Strategy
 
 | Path | Cache TTL | Purpose |
 |------|-----------|---------|
-| `/stats/database-stats.json` | 1 hour | Database stats regenerated hourly |
-| `/stats/commodity-ticker.json` | 5 minutes | Trading data changes frequently |
+| `/health` | No cache | Real-time health status |
+| `/stats/database-stats.json` | 30 minutes | Database stats (updated every 6h, fresher cache allowed) |
+| `/stats/commodity-ticker.json` | 3 minutes | Trading data changes frequently |
 | `/stats/*` | 1 hour | General stats files |
+| `/galnet/*` | 6 hours | GalNet news rarely changes |
 | `/stations/:id` | 24 hours | Station data rarely changes |
 | `/systems/:id` | 24 hours | System data rarely changes |
-| `/commodities/*` | 1 hour | Market data updates |
+| `/commodities/*/` | 30 minutes | Market data updates |
+| `/commodities/*/*.json` | 1 hour | Individual commodity files |
 | `/search/*` | No cache | Dynamic results |
 | `/admin/*` | No cache | Admin endpoints |
+
+**Advanced Caching:**
+- `stale-while-revalidate`: Serves stale content while fetching fresh (2x TTL)
+- `stale-if-error`: Serves stale content if origin is down (4x TTL, max 24h)
+- Compression: Auto-enabled (gzip, brotli, deflate)
 
 ## 🚀 Deployment Options
 
@@ -138,11 +150,15 @@ Visit Cloudflare Dashboard → Analytics → Workers
 - Response time: 50-500ms (depending on user location)
 - Origin requests: 100%
 - Server load: High during peak times
+- Downtime visibility: Immediate (no stale cache)
 
 **With Worker:**
 - Response time: 10-50ms (edge cache)
 - Origin requests: 5-20% (cached at edge)
 - Server load: Reduced by 80-95%
+- Compression: Automatic (20-80% smaller payloads)
+- Resilience: Serves stale cache if origin is down
+- Health checks: Direct passthrough (real-time status)
 
 ## 💰 Cost
 
@@ -182,6 +198,48 @@ function getCacheTTL(pathname) {
   // ... existing rules
 }
 ```
+
+## 🚀 New Features (v2)
+
+### Resilient Caching
+The worker now uses advanced caching strategies:
+
+**Stale-While-Revalidate:**
+```http
+Cache-Control: public, max-age=1800, stale-while-revalidate=3600
+```
+- Serves cached content immediately
+- Fetches fresh content in background
+- Users get instant responses while cache updates
+
+**Stale-If-Error:**
+```http
+Cache-Control: public, max-age=1800, stale-if-error=7200
+```
+- If origin is down, serves stale cache
+- Provides 99.9% uptime even during maintenance
+- Automatic fallback to cached data
+
+### Health Check Support
+```bash
+# Health checks bypass cache completely
+curl https://api.yourdomain.com/health
+
+# Response includes maintenance status
+{
+  "status": "healthy",
+  "maintenance": {
+    "running": true,
+    "duration": 139
+  }
+}
+```
+
+### Compression
+- Automatic gzip/brotli compression
+- 20-80% smaller payloads
+- Faster transfer times
+- Lower bandwidth costs
 
 ## 🐛 Troubleshooting
 

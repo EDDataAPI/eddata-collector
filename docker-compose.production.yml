@@ -33,9 +33,14 @@ services:
       # Performance: Skip startup maintenance for faster restarts
       # Set to 'true' after initial setup for 540x faster startup (45min -> 5sec)
       - SKIP_STARTUP_MAINTENANCE=${SKIP_STARTUP_MAINTENANCE:-false}
+      # Performance: Skip slow regional commodity reports (Core Systems, Colonia)
+      # These take 5-10 minutes and are rarely used - skip them to speed up stats by 80%
+      - SKIP_REGIONAL_COMMODITY_REPORTS=${SKIP_REGIONAL_COMMODITY_REPORTS:-true}
       # Performance optimizations
       - NODE_OPTIONS=--max-old-space-size=4096
       - UV_THREADPOOL_SIZE=16
+      # SQLite optimization: 1GB cache fits perfectly in 4GB container
+      # Memory distribution: 1.5GB Node.js + 1GB SQLite + 1GB OS Cache + 0.5GB overhead
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3002/health || exit 1"]
       interval: 30s

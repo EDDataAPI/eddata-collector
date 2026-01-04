@@ -45,6 +45,32 @@ export default {
       })
     }
 
+    // Health check: don't cache, pass through directly
+    if (url.pathname === '/health') {
+      try {
+        const healthResponse = await fetch(originUrl + '/health', {
+          method: 'GET',
+          headers: { 'User-Agent': 'Cloudflare-Worker-Health-Check' }
+        })
+
+        const newHeaders = new Headers(healthResponse.headers)
+        Object.entries(corsHeaders).forEach(([key, value]) => {
+          newHeaders.set(key, value)
+        })
+        newHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+
+        return new Response(healthResponse.body, {
+          status: healthResponse.status,
+          headers: newHeaders
+        })
+      } catch (error) {
+        return new Response(JSON.stringify({ status: 'unhealthy', error: error.message }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        })
+      }
+    }
+
     try {
       // Check Cloudflare cache first
       // eslint-disable-next-line no-undef
@@ -66,15 +92,27 @@ export default {
         })
       }
 
-      // Fetch from origin
+      // Fetch from origin with optimized settings
+      const originHeaders = new Headers(request.headers)
+      originHeaders.set('Accept-Encoding', 'gzip, deflate, br')
+      originHeaders.set('X-Forwarded-For', request.headers.get('CF-Connecting-IP') || '')
+
       const originResponse = await fetch(originUrl + url.pathname + url.search, {
         method: request.method,
-        headers: request.headers,
+        headers: originHeaders,
         cf: {
           // Cloudflare-specific options
           cacheTtl: getCacheTTL(url.pathname),
-          cacheEverything: shouldCache(url.pathname)
-        }
+          cacheEverything: shouldCache(url.pathname),
+          // Enable compression
+          polish: 'lossy',
+          minify: {
+            javascript: false,
+            css: false,
+            html: false
+          }
+        },
+        signal: AbortSignal.timeout(30000) // 30 second timeout
       })
 
       // Clone response before modifying
@@ -131,19 +169,27 @@ export default {
  * Determine if a path should be cached
  */
 function shouldCache (pathname) {
-  // Cache all stats files
-  if (pathname.includes('/stats/')) return true
-  if (pathname.endsWith('.json')) return true
-
-  // Cache commodity data
-  if (pathname.includes('/commodities/')) return true
-
-  // Cache station/system lookups (but not searches with many results)
-  if (pathname.match(/\/(stations|systems)\/\d+$/)) return true
-
-  // Don't cache admin endpoints or dynamic searches
+  // Never cache health checks, admin, or dynamic searches
+  if (pathname === '/health') return false
   if (pathname.includes('/admin/')) return false
   if (pathname.includes('/search')) return false
+  if (pathname.includes('/upload')) return false
+
+  // Cache all stats files
+  if (pathname.includes('/stats/')) return true
+
+  // Cache JSON responses
+  if (pathname.endsWith('.json')) return true
+
+  // Cache commodity data (but with shorter TTL for ticker)
+  if (pathname.includes('/commodities/')) return true
+
+  // Cache station/system lookups (but not list endpoints)
+  if (pathname.match(/\/(stations|systems)\/[^/]+$/)) return true
+  if (pathname.match(/\/(stations|systems)\/\d+/)) return true
+
+  // Cache galnet news
+  if (pathname.includes('/galnet')) return true
 
   return false
 }
@@ -152,23 +198,32 @@ function shouldCache (pathname) {
  * Get cache TTL in seconds based on path
  */
 function getCacheTTL (pathname) {
-  // Stats files: 1 hour (regenerated hourly)
+  // Health check: no cache
+  if (pathname === '/health') return 0
+
+  // Commodity ticker: 3 minutes (frequent updates)
+  if (pathname.endsWith('/commodity-ticker.json')) return 180
+
+  // Database stats: 30 minutes (updated every 6 hours, but allow fresher cache)
+  if (pathname.endsWith('/database-stats.json')) return 1800
+
+  // General stats files: 1 hour
   if (pathname.includes('/stats/')) return 3600
 
-  // Database stats: 1 hour
-  if (pathname.endsWith('/database-stats.json')) return 3600
+  // GalNet news: 6 hours (rarely changes)
+  if (pathname.includes('/galnet')) return 21600
 
-  // Commodity ticker: 5 minutes (more volatile)
-  if (pathname.endsWith('/commodity-ticker.json')) return 300
+  // Individual station/system: 24 hours (static data)
+  if (pathname.match(/\/(stations|systems)\/[^/]+$/)) return 86400
 
-  // Individual station/system: 24 hours
-  if (pathname.match(/\/(stations|systems)\/\d+$/)) return 86400
+  // Commodity market data: 30 minutes
+  if (pathname.includes('/commodities/')) return 1800
 
-  // Commodity data: 1 hour
-  if (pathname.includes('/commodities/')) return 3600
+  // Individual commodity files: 1 hour
+  if (pathname.match(/\/commodities\/[^/]+\.json$/)) return 3600
 
-  // Default: 5 minutes
-  return 300
+  // Default: 10 minutes
+  return 600
 }
 
 /**
@@ -177,6 +232,18 @@ function getCacheTTL (pathname) {
 function getCacheControl (pathname) {
   const ttl = getCacheTTL(pathname)
 
-  // Public cache with revalidation
-  return `public, max-age=${ttl}, s-maxage=${ttl}, stale-while-revalidate=60`
+  // No cache for health checks
+  if (pathname === '/health') {
+    return 'no-cache, no-store, must-revalidate'
+  }
+
+  // Stale-while-revalidate allows serving stale content while fetching fresh
+  // Set to 2x the TTL for better resilience during origin issues
+  const staleWhileRevalidate = Math.min(ttl * 2, 3600)
+
+  // Stale-if-error allows serving stale content if origin is down
+  const staleIfError = Math.min(ttl * 4, 86400)
+
+  // Public cache with revalidation strategies
+  return `public, max-age=${ttl}, s-maxage=${ttl}, stale-while-revalidate=${staleWhileRevalidate}, stale-if-error=${staleIfError}`
 }

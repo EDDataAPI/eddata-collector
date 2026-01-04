@@ -152,15 +152,23 @@ const { EDDATA_CACHE_DIR } = require('../../lib/consts')
   console.timeEnd('Generate commodity ticker')
 
   // Fixed: The reports now join with the stations table for system positional data
-  console.log('Updating Core Systems commodity data…')
-  console.time('Update Core Systems commodity data')
-  await updateCommodityReport('core-systems-1000', 'Sol', 500, 1000)
-  console.timeEnd('Update Core Systems commodity data')
+  // Performance: These regional reports are SLOW (5-10 min) - can be skipped
+  const { SKIP_REGIONAL_COMMODITY_REPORTS } = require('../../lib/consts')
 
-  console.log('Updating Colonia Systems commodity data…')
-  console.time('Update Colonia Systems commodity data')
-  await updateCommodityReport('colonia-systems-1000', 'Colonia', 500, 1000)
-  console.timeEnd('Update Colonia Systems commodity data')
+  if (SKIP_REGIONAL_COMMODITY_REPORTS) {
+    console.log('⚡ Skipping regional commodity reports (SKIP_REGIONAL_COMMODITY_REPORTS=true)')
+    console.log('   This saves 5-10 minutes of processing time')
+  } else {
+    console.log('Updating Core Systems commodity data…')
+    console.time('Update Core Systems commodity data')
+    await updateCommodityReport('core-systems-1000', 'Sol', 500, 1000)
+    console.timeEnd('Update Core Systems commodity data')
+
+    console.log('Updating Colonia Systems commodity data…')
+    console.time('Update Colonia Systems commodity data')
+    await updateCommodityReport('colonia-systems-1000', 'Colonia', 500, 1000)
+    console.timeEnd('Update Colonia Systems commodity data')
+  }
 
   // Close snapshot connections
   tradeDb.close()

@@ -32,6 +32,8 @@ services:
       - MAINTENANCE_WINDOW_END_HOUR=${MAINTENANCE_WINDOW_END_HOUR:-3}
       # Performance: Skip startup maintenance for faster testing cycles
       - SKIP_STARTUP_MAINTENANCE=${SKIP_STARTUP_MAINTENANCE:-false}
+      # Performance: Skip slow regional commodity reports (saves 5-10 min)
+      - SKIP_REGIONAL_COMMODITY_REPORTS=${SKIP_REGIONAL_COMMODITY_REPORTS:-true}
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3002/health || exit 1"]
       interval: 15s
