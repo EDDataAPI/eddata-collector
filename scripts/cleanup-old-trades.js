@@ -2,7 +2,6 @@
 // Run this to clean up the 7.4GB trade.db immediately
 
 const { tradeDb } = require('../lib/db')
-const { getISOTimestamp } = require('../lib/utils/dates')
 
 const DAYS_TO_KEEP = 30
 
