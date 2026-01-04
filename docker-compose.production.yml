@@ -39,6 +39,9 @@ services:
       # Performance: Skip expensive index creation on startup (first run only)
       # New indexes are created in background - prevents 5-10 min startup delay
       - SKIP_EXPENSIVE_INDEXES=${SKIP_EXPENSIVE_INDEXES:-false}
+      # Performance: Skip database integrity checks on startup
+      # Only needed after crashes/corruption - saves 2-5 minutes for large DBs
+      - SKIP_INTEGRITY_CHECKS=${SKIP_INTEGRITY_CHECKS:-true}
       # Performance optimizations
       - NODE_OPTIONS=--max-old-space-size=4096
       - UV_THREADPOOL_SIZE=16

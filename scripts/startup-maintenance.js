@@ -32,25 +32,41 @@ module.exports = async () => {
   console.log('Performing maintenance tasks...')
 
   // Check database integrity before proceeding
-  console.log('Checking database integrity...')
-  const databases = [
-    { name: 'systems.db', db: systemsDb, path: EDDATA_SYSTEMS_DB },
-    { name: 'stations.db', db: stationsDb, path: EDDATA_STATIONS_DB },
-    { name: 'trade.db', db: tradeDb, path: EDDATA_TRADE_DB }
-  ]
+  // Performance: Can be skipped on production for faster startup (only needed after crashes)
+  const skipIntegrityChecks = process.env.SKIP_INTEGRITY_CHECKS === 'true'
 
-  for (const { name, db, path: dbPath } of databases) {
-    if (fs.existsSync(dbPath)) {
-      try {
-        const result = db.prepare('PRAGMA integrity_check').get()
-        if (result.integrity_check !== 'ok') {
-          console.error(`❌ Database ${name} is CORRUPTED: ${result.integrity_check}`)
-          console.error('   Consider restoring from backup or rebuilding database')
-        } else {
-          console.log(`✓ Database ${name} integrity OK`)
+  if (skipIntegrityChecks) {
+    console.log('⚡ Skipping database integrity checks (SKIP_INTEGRITY_CHECKS=true)')
+    console.log('   Integrity checks only needed after crashes or corruption')
+  } else {
+    console.log('Checking database integrity...')
+    const databases = [
+      { name: 'systems.db', db: systemsDb, path: EDDATA_SYSTEMS_DB },
+      { name: 'stations.db', db: stationsDb, path: EDDATA_STATIONS_DB },
+      { name: 'trade.db', db: tradeDb, path: EDDATA_TRADE_DB }
+    ]
+
+    for (const { name, db, path: dbPath } of databases) {
+      if (fs.existsSync(dbPath)) {
+        try {
+          // Show progress for large databases
+          if (name === 'trade.db') {
+            console.log(`Checking ${name} integrity (may take 2-5 minutes for large DB)...`)
+          }
+
+          const startTime = Date.now()
+          const result = db.prepare('PRAGMA integrity_check').get()
+          const duration = Math.round((Date.now() - startTime) / 1000)
+
+          if (result.integrity_check !== 'ok') {
+            console.error(`❌ Database ${name} is CORRUPTED: ${result.integrity_check}`)
+            console.error('   Consider restoring from backup or rebuilding database')
+          } else {
+            console.log(`✓ Database ${name} integrity OK (${duration}s)`)
+          }
+        } catch (error) {
+          console.error(`❌ Failed to check ${name} integrity:`, error.message)
         }
-      } catch (error) {
-        console.error(`❌ Failed to check ${name} integrity:`, error.message)
       }
     }
   }

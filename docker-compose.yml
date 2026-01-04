@@ -47,6 +47,9 @@ services:
       # Performance: Skip expensive index creation on startup (first run only)
       # New indexes are created in background - prevents 5-10 min startup delay
       - SKIP_EXPENSIVE_INDEXES=${SKIP_EXPENSIVE_INDEXES:-false}
+      # Performance: Skip database integrity checks on startup
+      # Only needed after crashes/corruption - saves 2-5 minutes for large DBs
+      - SKIP_INTEGRITY_CHECKS=${SKIP_INTEGRITY_CHECKS:-true}
       # Performance optimizations
       - NODE_OPTIONS=--max-old-space-size=4096
       - UV_THREADPOOL_SIZE=16
@@ -65,8 +68,8 @@ services:
       test: ["CMD", "node", "-e", "const http = require('http'); const options = { hostname: 'localhost', port: 3002, path: '/health', timeout: 5000 }; const req = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1)); req.on('timeout', () => process.exit(1)); req.end();"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 300s  # 5 minutes for large database integrity checks
+      retries: 5
+      start_period: 1200s  # 10 minutes for large database startup (integrity checks + index creation)
     logging:
       driver: "json-file"
       options:

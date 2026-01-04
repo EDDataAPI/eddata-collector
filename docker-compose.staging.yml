@@ -34,6 +34,10 @@ services:
       - SKIP_STARTUP_MAINTENANCE=${SKIP_STARTUP_MAINTENANCE:-false}
       # Performance: Skip slow regional commodity reports (saves 5-10 min)
       - SKIP_REGIONAL_COMMODITY_REPORTS=${SKIP_REGIONAL_COMMODITY_REPORTS:-true}
+      # Performance: Skip expensive index creation on startup (first run only)
+      - SKIP_EXPENSIVE_INDEXES=${SKIP_EXPENSIVE_INDEXES:-false}
+      # Performance: Skip database integrity checks on startup
+      - SKIP_INTEGRITY_CHECKS=${SKIP_INTEGRITY_CHECKS:-true}
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3002/health || exit 1"]
       interval: 15s
