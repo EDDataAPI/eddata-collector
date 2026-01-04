@@ -30,6 +30,8 @@ services:
       - MAINTENANCE_DAY_OF_WEEK=${MAINTENANCE_DAY_OF_WEEK:-6}
       - MAINTENANCE_WINDOW_START_HOUR=${MAINTENANCE_WINDOW_START_HOUR:-1}
       - MAINTENANCE_WINDOW_END_HOUR=${MAINTENANCE_WINDOW_END_HOUR:-3}
+      # Performance: Skip startup maintenance for faster testing cycles
+      - SKIP_STARTUP_MAINTENANCE=${SKIP_STARTUP_MAINTENANCE:-false}
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3002/health || exit 1"]
       interval: 15s

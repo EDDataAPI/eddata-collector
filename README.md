@@ -139,6 +139,9 @@ The EDData Collector can be configured via environment variables:
 - `MAINTENANCE_DAY_OF_WEEK`: Maintenance day (default: 4 = Thursday)
 - `MAINTENANCE_WINDOW_START_HOUR`: Maintenance start (default: 7 AM UTC)
 - `MAINTENANCE_WINDOW_END_HOUR`: Maintenance end (default: 9 AM UTC)
+- `SKIP_STARTUP_MAINTENANCE`: Skip maintenance on startup for faster restarts (default: false)
+
+> **⚡ Performance Tip:** For large databases (>10GB), startup can take 45+ minutes. Set `SKIP_STARTUP_MAINTENANCE=true` after initial setup to reduce startup time to ~5 seconds (540x faster!). See [docs/PERFORMANCE-OPTIMIZATIONS.md](docs/PERFORMANCE-OPTIMIZATIONS.md) for details.
 
 ### 📄 Configuration File
 

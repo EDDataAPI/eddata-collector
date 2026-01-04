@@ -4,7 +4,7 @@ const { systemsDb, locationsDb, stationsDb, tradeDb } = require('../lib/db') // 
 const { execSync } = require('child_process')
 const fs = require('fs')
 const path = require('path')
-const { EDDATA_STATIONS_DB, EDDATA_SYSTEMS_DB, EDDATA_TRADE_DB, EDDATA_CACHE_DIR } = require('../lib/consts')
+const { EDDATA_STATIONS_DB, EDDATA_SYSTEMS_DB, EDDATA_TRADE_DB, EDDATA_CACHE_DIR, SKIP_STARTUP_MAINTENANCE } = require('../lib/consts')
 
 // The purpose of this is to be a place for any logic that needs to run at
 // startup, before the service goes back online. It is not a script in the
@@ -20,6 +20,12 @@ const { EDDATA_STATIONS_DB, EDDATA_SYSTEMS_DB, EDDATA_TRADE_DB, EDDATA_CACHE_DIR
 
 module.exports = async () => {
   console.time('Startup maintenance')
+
+  // Performance optimization: Allow skipping all startup maintenance
+  if (SKIP_STARTUP_MAINTENANCE) {
+    console.log('⚡ Skipping startup maintenance (SKIP_STARTUP_MAINTENANCE=true)')\n    console.log('   Stats will be regenerated via cron schedule')\n    console.timeEnd('Startup maintenance')
+    return
+  }
 
   console.log('Performing maintenance tasks...')
 
@@ -47,21 +53,33 @@ module.exports = async () => {
     }
   }
 
-  // Generate database statistics and cache on every startup if databases exist
+  // Generate database statistics and cache on startup only if needed
   const hasDatabases = fs.existsSync(EDDATA_STATIONS_DB) ||
                        fs.existsSync(EDDATA_SYSTEMS_DB) ||
                        fs.existsSync(EDDATA_TRADE_DB)
 
   if (hasDatabases) {
-    console.log('Generating database statistics and cache...')
-    try {
-      execSync('npm run stats', { stdio: 'inherit' })
-      console.log('Database statistics and cache generated successfully')
-    } catch (error) {
-      console.error('Failed to generate database statistics:', error.message)
-      console.error('Full error:', error)
-      if (error.stderr) console.error('STDERR:', error.stderr.toString())
-      if (error.stdout) console.error('STDOUT:', error.stdout.toString())
+    // Check if we need to regenerate stats or if existing cache is still fresh
+    const { areSnapshotsFresh } = require('./stats/snapshot-databases')
+    const cacheStatsPath = path.join(EDDATA_CACHE_DIR, 'database-stats.json')
+    const cacheExists = fs.existsSync(cacheStatsPath)
+    const snapshotsFresh = areSnapshotsFresh()
+    
+    if (!cacheExists || !snapshotsFresh) {
+      console.log('Generating database statistics and cache...')
+      console.log(`  Cache exists: ${cacheExists}, Snapshots fresh: ${snapshotsFresh}`)
+      try {
+        execSync('npm run stats', { stdio: 'inherit' })
+        console.log('Database statistics and cache generated successfully')
+      } catch (error) {
+        console.error('Failed to generate database statistics:', error.message)
+        console.error('Full error:', error)
+        if (error.stderr) console.error('STDERR:', error.stderr.toString())
+        if (error.stdout) console.error('STDOUT:', error.stdout.toString())
+      }
+    } else {
+      console.log('✓ Skipping stats generation - cache and snapshots are still fresh')
+      console.log('  Stats will be regenerated automatically via cron schedule')
     }
   } else {
     console.log('No databases found, creating empty cache files...')

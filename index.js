@@ -215,7 +215,12 @@ if (SAVE_PAYLOAD_EXAMPLES === true &&
   socket.subscribe('')
   console.log('Connected to EDDN')
 
-  await startupMaintenance()
+  // Run startup maintenance asynchronously in the background (non-blocking)
+  // This allows the collector to start processing messages immediately
+  console.log('Starting background maintenance tasks (non-blocking)...')
+  startupMaintenance().catch(err => {
+    console.error('Startup maintenance error:', err)
+  })
 
   // If a backup log does not exist, create a new backup immediately
   if (!fs.existsSync(EDDATA_BACKUP_LOG)) {
