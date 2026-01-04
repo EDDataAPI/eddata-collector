@@ -54,9 +54,9 @@ services:
       # Performance optimizations
       - NODE_OPTIONS=--max-old-space-size=4096
       - UV_THREADPOOL_SIZE=16
-      # SQLite optimization: 2GB cache for 4GB+ database
+      # SQLite optimization: 2GB cache for 7.4GB database (server has 8GB RAM total!)
       # Memory distribution: 1.5GB Node.js + 2GB SQLite + 2GB OS Cache + 0.5GB overhead
-    # Resource limits for production deployment (increased for 4.3GB database)
+    # Resource limits for production deployment (server has 8GB RAM total)
     deploy:
       resources:
         limits:

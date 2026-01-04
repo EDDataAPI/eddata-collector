@@ -45,8 +45,8 @@ services:
       # Performance optimizations
       - NODE_OPTIONS=--max-old-space-size=4096
       - UV_THREADPOOL_SIZE=16
-      # SQLite optimization: 1GB cache fits perfectly in 4GB container
-      # Memory distribution: 1.5GB Node.js + 1GB SQLite + 1GB OS Cache + 0.5GB overhead
+      # SQLite optimization: 2GB cache for 7.4GB database (server has 8GB RAM total!)
+      # Memory distribution: 1.5GB Node.js + 2GB SQLite + 2GB OS Cache + 0.5GB overhead
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3002/health || exit 1"]
       interval: 30s
