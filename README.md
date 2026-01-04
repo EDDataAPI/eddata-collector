@@ -162,25 +162,8 @@ LOG_LEVEL=info
 ### 🏠 Local Development
 
 ```bash
-# Start development environment
-docker-compose -f docker-compose.yml up -d
-```
-
-### 🧪 Staging
-
-```bash
-# Staging environment
-docker-compose -f docker-compose.staging.yml up -d
-```
-
-### 🌐 Production
-
-```bash
-# Production environment
-docker-compose -f docker-compose.production.yml up -d
-
-# With monitoring (optional)
-docker-compose -f docker-compose.production.yml --profile monitoring up -d
+# Start container
+docker-compose up -d
 ```
 
 ### 📊 Management Scripts
@@ -188,12 +171,6 @@ docker-compose -f docker-compose.production.yml --profile monitoring up -d
 ```bash
 # Run build script
 npm run docker:build
-
-# Deployment script
-node scripts/deploy.js deploy --env=production
-
-# Check status
-node scripts/deploy.js status --env=production
 
 # View logs
 npm run docker:logs
@@ -224,17 +201,7 @@ curl http://localhost:3002/health
 docker ps --filter "name=eddata-collector"
 ```
 
-### 📊 Metrics (Optional)
 
-You can enable monitoring with the production Docker Compose stack:
-
-```bash
-# Start with Prometheus and Grafana
-docker-compose -f docker-compose.production.yml --profile monitoring up -d
-
-# Prometheus: http://localhost:9090
-# Grafana: http://localhost:3000 (admin/admin)
-```
 
 ## 🔧 Maintenance
 
