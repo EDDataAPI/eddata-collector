@@ -399,7 +399,7 @@ if (SAVE_PAYLOAD_EXAMPLES === true &&
       if (messageCount % 1000 === 0) {
         const duration = getPerformanceDuration('message-processing-start')
         console.log(`Processed ${messageCount} messages in ${Math.round(duration)}ms (avg: ${Math.round(duration / messageCount)}ms/msg)`)
-        
+
         // Clear performance entries to prevent memory buildup
         performance.clearMarks()
         performance.clearMeasures()

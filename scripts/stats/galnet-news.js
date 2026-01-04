@@ -25,7 +25,7 @@ async function fetchGalNetNews () {
       res.on('end', () => {
         console.log('[DEBUG] API Response Status:', res.statusCode)
         console.log('[DEBUG] API Response Length:', data.length, 'bytes')
-        
+
         if (res.statusCode === 200) {
           try {
             const json = JSON.parse(data)
@@ -51,7 +51,7 @@ async function fetchGalNetNews () {
 function transformGalNetNews (apiResponse) {
   console.log('[DEBUG] API Response type:', typeof apiResponse)
   console.log('[DEBUG] API Response keys:', Object.keys(apiResponse || {}))
-  
+
   if (!apiResponse.data || !Array.isArray(apiResponse.data)) {
     console.warn('[DEBUG] apiResponse.data is not an array or missing. Response:', JSON.stringify(apiResponse).substring(0, 200))
     return { articles: [], timestamp: new Date().toISOString() }

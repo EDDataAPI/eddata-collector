@@ -23,7 +23,9 @@ module.exports = async () => {
 
   // Performance optimization: Allow skipping all startup maintenance
   if (SKIP_STARTUP_MAINTENANCE) {
-    console.log('⚡ Skipping startup maintenance (SKIP_STARTUP_MAINTENANCE=true)')\n    console.log('   Stats will be regenerated via cron schedule')\n    console.timeEnd('Startup maintenance')
+    console.log('⚡ Skipping startup maintenance (SKIP_STARTUP_MAINTENANCE=true)')
+    console.log('   Stats will be regenerated via cron schedule')
+    console.timeEnd('Startup maintenance')
     return
   }
 
@@ -64,7 +66,7 @@ module.exports = async () => {
     const cacheStatsPath = path.join(EDDATA_CACHE_DIR, 'database-stats.json')
     const cacheExists = fs.existsSync(cacheStatsPath)
     const snapshotsFresh = areSnapshotsFresh()
-    
+
     if (!cacheExists || !snapshotsFresh) {
       console.log('Generating database statistics and cache...')
       console.log(`  Cache exists: ${cacheExists}, Snapshots fresh: ${snapshotsFresh}`)
