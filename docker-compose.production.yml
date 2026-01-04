@@ -36,6 +36,9 @@ services:
       # Performance: Skip slow regional commodity reports (Core Systems, Colonia)
       # These take 5-10 minutes and are rarely used - skip them to speed up stats by 80%
       - SKIP_REGIONAL_COMMODITY_REPORTS=${SKIP_REGIONAL_COMMODITY_REPORTS:-true}
+      # Performance: Skip expensive index creation on startup (first run only)
+      # New indexes are created in background - prevents 5-10 min startup delay
+      - SKIP_EXPENSIVE_INDEXES=${SKIP_EXPENSIVE_INDEXES:-false}
       # Performance optimizations
       - NODE_OPTIONS=--max-old-space-size=4096
       - UV_THREADPOOL_SIZE=16
