@@ -8,6 +8,7 @@ services:
     # Let Dokploy manage container naming
     # container_name: eddata-collector
     restart: unless-stopped
+    # Ports automatically managed by Dokploy
     ports:
       - "${EDDATA_COLLECTOR_PORT:-3002}:3002"
     volumes:
@@ -69,7 +70,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 1200s  # 10 minutes for large database startup (integrity checks + index creation)
+      start_period: 900s  # 15 minutes for large DB integrity checks (10 min) + buffer
     logging:
       driver: "json-file"
       options:

@@ -51,7 +51,7 @@ module.exports = async () => {
         try {
           // Show progress for large databases
           if (name === 'trade.db') {
-            console.log(`Checking ${name} integrity (may take 2-5 minutes for large DB)...`)
+            console.log(`Checking ${name} integrity (may take 5-10 minutes for large DB)...`)
           }
 
           const startTime = Date.now()

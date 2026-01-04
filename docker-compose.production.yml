@@ -51,8 +51,8 @@ services:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3002/health || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 300s  # 5 minutes for large database integrity checks
+      retries: 5
+      start_period: 900s  # 15 minutes for large DB integrity checks (10 min) + buffer
     logging:
       driver: "json-file"
       options:
