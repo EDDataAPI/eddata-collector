@@ -51,11 +51,16 @@ services:
       # Performance: Skip database integrity checks on startup
       # Only needed after crashes/corruption - saves 2-5 minutes for large DBs
       - SKIP_INTEGRITY_CHECKS=${SKIP_INTEGRITY_CHECKS:-true}
+      # Performance: Skip trade.db snapshots to prevent OOM kills
+      # trade.db is 7GB+ and requires significant RAM for snapshotting
+      # Set to 'true' on servers with <16GB RAM (default: true for 8GB server)
+      - SKIP_TRADE_DB_SNAPSHOTS=${SKIP_TRADE_DB_SNAPSHOTS:-true}
       # Performance optimizations
       - NODE_OPTIONS=--max-old-space-size=4096
       - UV_THREADPOOL_SIZE=16
-      # SQLite optimization: 2GB cache for 7.4GB database (server has 8GB RAM total!)
+      # SQLite optimization: 2GB cache for ~5GB database (server has 8GB RAM total!)
       # Memory distribution: 1.5GB Node.js + 2GB SQLite + 2GB OS Cache + 0.5GB overhead
+      # Database cleaned: 7.5GB → 5GB after 30-day retention cleanup + VACUUM
     # Resource limits for production deployment (server has 8GB RAM total)
     deploy:
       resources:

@@ -1,6 +1,7 @@
 const path = require('node:path')
 const fs = require('node:fs')
 const { systemsDb, locationsDb, stationsDb, tradeDb } = require('../../lib/db')
+const { SKIP_TRADE_DB_SNAPSHOTS } = require('../../lib/consts')
 
 /**
  * Creates read-only snapshots of all databases for stats generation
@@ -53,6 +54,13 @@ function createSnapshots () {
   }
 
   for (const { db, name } of databases) {
+    // Skip trade.db snapshots on memory-constrained servers to prevent OOM
+    if (name === 'trade.db' && SKIP_TRADE_DB_SNAPSHOTS) {
+      console.log('  ⚡ Skipping trade.db snapshot (SKIP_TRADE_DB_SNAPSHOTS=true)')
+      console.log('     Prevents OOM on servers with <16GB RAM')
+      continue
+    }
+
     const snapshotPath = path.join(SNAPSHOT_DIR, name)
 
     // Remove old snapshot files
