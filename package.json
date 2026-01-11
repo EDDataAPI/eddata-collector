@@ -8,6 +8,7 @@
     "dev": "cross-env NODE_ENV=development node --disable-warning=DEP0180 index.js",
     "test": "node tests",
     "download": "node --disable-warning=DEP0180 scripts/download.js",
+    "import": "node --disable-warning=DEP0180 scripts/import-data.js",
     "backup": "node --disable-warning=DEP0180 scripts/backup.js",
     "backup:compress": "node --disable-warning=DEP0180 scripts/backup-compress.js",
     "restore": "node --disable-warning=DEP0180 scripts/restore.js",
