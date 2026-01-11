@@ -198,6 +198,26 @@ if (SAVE_PAYLOAD_EXAMPLES === true &&
   // API Routes
   router.get('/', (ctx) => { ctx.body = printStats() })
 
+  // Trigger stats regeneration manually
+  router.post('/refresh-stats', async (ctx) => {
+    console.log('Manual stats refresh triggered via API')
+    
+    ctx.body = {
+      status: 'started',
+      message: 'Stats generation has been triggered',
+      timestamp: new Date().toISOString()
+    }
+
+    // Run stats generation asynchronously (non-blocking)
+    exec('npm run stats', (error, stdout, stderr) => {
+      if (error) {
+        console.error('Manual stats generation failed:', error.message)
+      } else {
+        console.log('Manual stats generation completed successfully')
+      }
+    })
+  })
+
   // Health check endpoint for load balancers
   router.get('/health', (ctx) => {
     const healthStatus = {
