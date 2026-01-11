@@ -195,6 +195,21 @@ if (SAVE_PAYLOAD_EXAMPLES === true &&
     return next()
   })
 
+  // CORS middleware - allow requests from eddata.dev
+  app.use(async (ctx, next) => {
+    ctx.set('Access-Control-Allow-Origin', '*')
+    ctx.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    ctx.set('Access-Control-Allow-Headers', 'Content-Type')
+    
+    // Handle preflight requests
+    if (ctx.method === 'OPTIONS') {
+      ctx.status = 204
+      return
+    }
+    
+    await next()
+  })
+
   // API Routes
   router.get('/', (ctx) => { ctx.body = printStats() })
 
