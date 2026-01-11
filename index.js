@@ -335,10 +335,10 @@ if (SAVE_PAYLOAD_EXAMPLES === true &&
     })
   })
 
-  // Generate stats 4x daily to minimize DB locks from snapshot creation
-  // Snapshots cache for 6h, so this alignment reduces VACUUM INTO conflicts
-  cron.schedule('0 */6 * * *', () => { // Every 6 hours: 00:00, 06:00, 12:00, 18:00
-    console.log('Running 6-hourly stats generation (using snapshots)...')
+  // Generate stats hourly for more up-to-date statistics on the main page
+  // Snapshots are reused if still fresh (6h), so frequent runs don't increase DB load
+  cron.schedule('0 * * * *', () => { // Every hour at :00
+    console.log('Running hourly stats generation (using snapshots)...')
     exec('npm run stats', (error, stdout, stderr) => {
       if (error) {
         console.error('Stats generation failed:', error.message)
