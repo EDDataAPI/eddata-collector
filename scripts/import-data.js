@@ -23,12 +23,10 @@
  */
 
 const fs = require('fs')
-const path = require('path')
 const SqlLiteDatabase = require('better-sqlite3')
 const byteSize = require('byte-size')
 
 const {
-  EDDATA_DATA_DIR,
   EDDATA_SYSTEMS_DB,
   EDDATA_STATIONS_DB,
   EDDATA_LOCATIONS_DB,

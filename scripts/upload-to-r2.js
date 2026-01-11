@@ -17,8 +17,7 @@ const getFileHash = require('../lib/utils/get-file-hash')
 const byteSize = require('byte-size')
 
 const {
-  EDDATA_DOWNLOADS_DIR,
-  EDDATA_DOWNLOADS_BASE_URL
+  EDDATA_DOWNLOADS_DIR
 } = require('../lib/consts')
 
 // R2 Configuration (compatible with S3 API)
