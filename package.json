@@ -36,7 +36,7 @@
   "homepage": "https://github.com/EDDataAPI/eddata-collector#readme",
   "dependencies": {
     "@koa/router": "^15.2.0",
-    "better-sqlite3": "^12.5.0",
+    "better-sqlite3": "^12.6.0",
     "byte-size": "^9.0.1",
     "check-disk-space": "^3.4.0",
     "cross-env": "^10.1.0",
@@ -47,7 +47,7 @@
     "zeromq": "^6.5.0"
   },
   "devDependencies": {
-    "standard": "^17.1.0"
+    "standard": "^17.1.2"
   },
   "engines": {
     "npm": ">=10.0.0",
