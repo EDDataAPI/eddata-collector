@@ -7,7 +7,7 @@ const {
 const { createSnapshots, areSnapshotsFresh, getSnapshotPaths } = require('./snapshot-databases')
 const fs = require('fs')
 const path = require('path')
-const { EDDATA_CACHE_DIR } = require('../../lib/consts')
+const { EDDATA_CACHE_DIR, SKIP_TRADE_DB_SNAPSHOTS } = require('../../lib/consts')
 
 ;(async () => {
   console.log('Updating stats for commodities…')
@@ -22,6 +22,17 @@ const { EDDATA_CACHE_DIR } = require('../../lib/consts')
 
   // Connect to snapshot databases
   const paths = getSnapshotPaths()
+  
+  // Check if trade.db snapshot exists before attempting to open it
+  const tradeDbExists = !SKIP_TRADE_DB_SNAPSHOTS && fs.existsSync(paths.tradeDb)
+  
+  if (!tradeDbExists) {
+    console.log('⚡ Cannot generate commodity stats - trade.db snapshot not available')
+    console.log('   Set SKIP_TRADE_DB_SNAPSHOTS=false to enable trade database snapshots')
+    console.log('   Note: Requires sufficient RAM (recommend 16GB+) as trade.db is 7GB+')
+    process.exit(0)
+  }
+  
   const tradeDb = new SqliteDatabase(paths.tradeDb, { readonly: true })
   const systemsDb = new SqliteDatabase(paths.systemsDb, { readonly: true })
   const stationsDb = new SqliteDatabase(paths.stationsDb, { readonly: true })
@@ -171,7 +182,7 @@ const { EDDATA_CACHE_DIR } = require('../../lib/consts')
   }
 
   // Close snapshot connections
-  tradeDb.close()
+  if (tradeDb) tradeDb.close()
   systemsDb.close()
   stationsDb.close()
 
