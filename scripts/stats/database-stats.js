@@ -1,6 +1,6 @@
 const fs = require('fs')
 const SqliteDatabase = require('better-sqlite3')
-const { EDDATA_CACHE_DIR, EDDATA_DATABASE_STATS } = require('../../lib/consts')
+const { EDDATA_CACHE_DIR, EDDATA_DATABASE_STATS, SKIP_TRADE_DB_SNAPSHOTS } = require('../../lib/consts')
 const { getISOTimestamp } = require('../../lib/utils/dates')
 const { createSnapshots, areSnapshotsFresh, getSnapshotPaths } = require('./snapshot-databases')
 
@@ -24,19 +24,28 @@ const { createSnapshots, areSnapshotsFresh, getSnapshotPaths } = require('./snap
   const systemsDb = new SqliteDatabase(paths.systemsDb, { readonly: true })
   const locationsDb = new SqliteDatabase(paths.locationsDb, { readonly: true })
   const stationsDb = new SqliteDatabase(paths.stationsDb, { readonly: true })
-  const tradeDb = new SqliteDatabase(paths.tradeDb, { readonly: true })
+  
+  // Only open trade.db snapshot if it exists (may be skipped on memory-constrained servers)
+  const tradeDbExists = !SKIP_TRADE_DB_SNAPSHOTS && fs.existsSync(paths.tradeDb)
+  const tradeDb = tradeDbExists ? new SqliteDatabase(paths.tradeDb, { readonly: true }) : null
 
   // Optimized: Single combined query instead of 4 sub-queries for commodity stats
-  const commodityStats = tradeDb.prepare(`
-    SELECT
-      COUNT(*) AS marketOrders,
-      COUNT(DISTINCT commodityName) AS uniqueCommodities,
-      COUNT(DISTINCT marketId) AS tradeMarkets,
-      SUM(CASE WHEN updatedAt > @last24HoursTimestamp THEN 1 ELSE 0 END) AS updatedInLast24Hours
-    FROM commodities
-  `).get({
-    last24HoursTimestamp: getISOTimestamp(-1)
-  })
+  // Skip if trade.db snapshot doesn't exist (SKIP_TRADE_DB_SNAPSHOTS=true)
+  let commodityStats = null
+  if (tradeDb) {
+    commodityStats = tradeDb.prepare(`
+      SELECT
+        COUNT(*) AS marketOrders,
+        COUNT(DISTINCT commodityName) AS uniqueCommodities,
+        COUNT(DISTINCT marketId) AS tradeMarkets,
+        SUM(CASE WHEN updatedAt > @last24HoursTimestamp THEN 1 ELSE 0 END) AS updatedInLast24Hours
+      FROM commodities
+    `).get({
+      last24HoursTimestamp: getISOTimestamp(-1)
+    })
+  } else {
+    console.log('  ⚡ Skipping trade stats (trade.db snapshot not available)')
+  }
 
   // Optimized: Single combined query with CASE statements instead of 3 sub-queries
   const stationStats = stationsDb.prepare(`
@@ -79,5 +88,5 @@ const { createSnapshots, areSnapshotsFresh, getSnapshotPaths } = require('./snap
   systemsDb.close()
   locationsDb.close()
   stationsDb.close()
-  tradeDb.close()
+  if (tradeDb) tradeDb.close()
 })()
